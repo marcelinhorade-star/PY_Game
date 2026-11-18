@@ -1,4 +1,6 @@
 import pygame
+from tiro import Tiro
+
 
 class Jogador(pygame.sprite.Sprite):
     """Personagem controlado pelo jogador."""
@@ -13,6 +15,7 @@ class Jogador(pygame.sprite.Sprite):
         self.no_chao = True
         self.vida = 3
         self.direcao = 1  # 1 = direita, -1 = esquerda
+        self.ultimo_tiro = 0
 
     def mover(self, teclas):
         """Anda para os lados com as setas."""
@@ -28,6 +31,14 @@ class Jogador(pygame.sprite.Sprite):
         if self.no_chao:
             self.vel_y = -15
             self.no_chao = False
+
+    def atirar(self, grupo_tiros):
+        """Cria um tiro, com intervalo de 250 ms entre tiros."""
+        agora = pygame.time.get_ticks()
+        if agora - self.ultimo_tiro > 250:
+            tiro = Tiro(self.rect.centerx, self.rect.centery, self.direcao)
+            grupo_tiros.add(tiro)
+            self.ultimo_tiro = agora
 
     def aplicar_gravidade(self, chao_y):
         """Puxa o jogador para baixo até o chão."""
