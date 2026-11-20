@@ -2,22 +2,43 @@ import pygame
 from tiro import Tiro
 
 
+def criar_frames_provisorios(cor, quantidade):
+    """Cria frames simples (retângulo com pernas) só para testar a animação."""
+    frames = []
+    for i in range(quantidade):
+        frame = pygame.Surface((40, 60), pygame.SRCALPHA)
+        pygame.draw.rect(frame, cor, (5, 0, 30, 45))              # corpo
+        pygame.draw.rect(frame, (255, 255, 255), (28, 10, 6, 6))  # olho
+        passo = 8 if i % 2 == 0 else -8
+        pygame.draw.line(frame, cor, (20, 45), (20 + passo, 60), 5)  # perna 1
+        pygame.draw.line(frame, cor, (20, 45), (20 - passo, 60), 5)  # perna 2
+        frames.append(frame)
+    return frames
+
+
 class Jogador(pygame.sprite.Sprite):
     """Personagem controlado pelo jogador."""
 
     def __init__(self, x, y):
         """Cria o jogador na posição (x, y)."""
         super().__init__()
-        self.image = pygame.Surface((40, 60))
-        self.image.fill((0, 120, 255))  # retângulo azul por enquanto
+        self.animacoes = {
+            "parado": criar_frames_provisorios((0, 120, 255), 1),
+            "andando": criar_frames_provisorios((0, 120, 255), 4),
+            "pulando": criar_frames_provisorios((0, 80, 200), 1),
+        }
+        self.estado = "parado"
+        self.frame_atual = 0
+        self.ultimo_frame = 0
+        self.image = self.animacoes["parado"][0]
         self.rect = self.image.get_rect(midbottom=(x, y))
         self.vel_y = 0
         self.no_chao = True
         self.vida = 3
         self.direcao = 1  # 1 = direita, -1 = esquerda
         self.ultimo_tiro = 0
-        self.ultimo_dano = -10000   # NOVO: momento (ms) do último dano
-        self.invencivel_ms = 1000   # NOVO: tempo de invencibilidade após dano
+        self.ultimo_dano = -10000   # momento (ms) do último dano
+        self.invencivel_ms = 1000   # tempo de invencibilidade após dano
 
     def mover(self, teclas):
         """Anda para os lados com as setas."""
@@ -52,11 +73,11 @@ class Jogador(pygame.sprite.Sprite):
             self.no_chao = True
 
     def esta_invencivel(self):
-        """NOVO: retorna True se o jogador levou dano há pouco tempo."""
+        """Retorna True se o jogador levou dano há pouco tempo."""
         return pygame.time.get_ticks() - self.ultimo_dano < self.invencivel_ms
 
     def levar_dano(self, quantidade=1):
-        """NOVO: tira vida do jogador, se ele não estiver invencível.
+        """Tira vida do jogador, se ele não estiver invencível.
 
         Retorna True se o dano foi aplicado, False se foi ignorado.
         """
@@ -69,11 +90,35 @@ class Jogador(pygame.sprite.Sprite):
         return True
 
     def esta_vivo(self):
-        """NOVO: retorna True enquanto o jogador tiver vida."""
+        """Retorna True enquanto o jogador tiver vida."""
         return self.vida > 0
 
+    def atualizar_estado(self, teclas):
+        """Escolhe a animação conforme o que o jogador está fazendo."""
+        if not self.no_chao:
+            novo = "pulando"
+        elif teclas[pygame.K_LEFT] or teclas[pygame.K_RIGHT]:
+            novo = "andando"
+        else:
+            novo = "parado"
+        if novo != self.estado:
+            self.estado = novo
+            self.frame_atual = 0
+
+    def animar(self):
+        """Troca de frame a cada 100 ms e vira a imagem para a direção certa."""
+        agora = pygame.time.get_ticks()
+        frames = self.animacoes[self.estado]
+        if agora - self.ultimo_frame > 100:
+            self.frame_atual = (self.frame_atual + 1) % len(frames)
+            self.ultimo_frame = agora
+        imagem = frames[self.frame_atual]
+        if self.direcao == -1:
+            imagem = pygame.transform.flip(imagem, True, False)
+        self.image = imagem
+
     def piscar(self):
-        """NOVO: faz o jogador piscar enquanto está invencível."""
+        """Faz o jogador piscar enquanto está invencível."""
         if self.esta_invencivel():
             visivel = (pygame.time.get_ticks() // 100) % 2 == 0
             self.image.set_alpha(255 if visivel else 80)
@@ -84,4 +129,6 @@ class Jogador(pygame.sprite.Sprite):
         """Atualiza o jogador a cada quadro."""
         self.mover(teclas)
         self.aplicar_gravidade(chao_y)
-        self.piscar()  # NOVO
+        self.atualizar_estado(teclas)
+        self.animar()
+        self.piscar()
