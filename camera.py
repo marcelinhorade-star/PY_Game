@@ -33,6 +33,12 @@ class Camera:
         """Retorna True se o rect aparece (mesmo que em parte) na tela."""
         return rect.right > self.x and rect.left < self.x + self.largura_tela
 
+    def remover_fora_da_tela(self, grupo):
+        """Apaga os sprites do grupo que saíram da área visível (ex.: tiros perdidos)."""
+        for sprite in grupo:
+            if not self.esta_visivel(sprite.rect):
+                sprite.kill()
+
     def desenhar_grupo(self, tela, grupo):
         """Desenha cada sprite do grupo na posição deslocada pela câmera."""
         for sprite in grupo:
