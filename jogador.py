@@ -1,9 +1,27 @@
+import os
 import pygame
 from tiro import Tiro
 
+# Pasta com os frames do jogador, sempre ao lado deste arquivo
+# (funciona não importa de qual pasta o jogo for rodado).
+PASTA_IMAGENS = os.path.join(os.path.dirname(__file__), "imagens", "jogador")
+
+# Os frames originais são pequenos (pixel art), então aumentamos 2 vezes.
+ESCALA = 2
+
+# Quantos frames cada animação tem. Os arquivos se chamam nome_0.png, nome_1.png...
+QUANTIDADE_FRAMES = {
+    "parado": 6,
+    "andando": 8,
+    "pulando": 2,
+    "agachado": 1,
+    "mirando_cima": 1,
+    "andando_cima": 8,
+}
+
 
 def criar_frames_provisorios(cor, quantidade, altura=60):
-    """Cria frames simples (retângulo com pernas) só para testar a animação."""
+    """Cria frames simples (retângulo com pernas), usados se as imagens não existirem."""
     frames = []
     for i in range(quantidade):
         frame = pygame.Surface((40, altura), pygame.SRCALPHA)
@@ -17,18 +35,47 @@ def criar_frames_provisorios(cor, quantidade, altura=60):
     return frames
 
 
+def carregar_frames(nome, quantidade):
+    """Carrega os arquivos nome_0.png ... nome_N.png e aumenta cada um pela ESCALA."""
+    frames = []
+    for i in range(quantidade):
+        caminho = os.path.join(PASTA_IMAGENS, f"{nome}_{i}.png")
+        imagem = pygame.image.load(caminho)
+        if pygame.display.get_surface() is not None:
+            imagem = imagem.convert_alpha()  # deixa o desenho mais rápido
+        imagem = pygame.transform.scale_by(imagem, ESCALA)
+        frames.append(imagem)
+    return frames
+
+
+def carregar_animacoes():
+    """Monta o dicionário {estado: lista de frames}.
+
+    Se a pasta de imagens não existir, usa os retângulos provisórios.
+    """
+    if not os.path.isdir(PASTA_IMAGENS):
+        azul = (0, 120, 255)
+        return {
+            "parado": criar_frames_provisorios(azul, 1),
+            "andando": criar_frames_provisorios(azul, 4),
+            "pulando": criar_frames_provisorios((0, 80, 200), 1),
+            "agachado": criar_frames_provisorios(azul, 1, altura=40),
+            "mirando_cima": criar_frames_provisorios(azul, 1),
+            "andando_cima": criar_frames_provisorios(azul, 4),
+        }
+    animacoes = {}
+    for nome, quantidade in QUANTIDADE_FRAMES.items():
+        animacoes[nome] = carregar_frames(nome, quantidade)
+    return animacoes
+
+
 class Jogador(pygame.sprite.Sprite):
     """Personagem controlado pelo jogador."""
 
     def __init__(self, x, y):
-        """Cria o jogador na posição (x, y)."""
+        """Cria o jogador na posição (x, y), que é o ponto entre os pés."""
         super().__init__()
-        self.animacoes = {
-            "parado": criar_frames_provisorios((0, 120, 255), 1),
-            "andando": criar_frames_provisorios((0, 120, 255), 4),
-            "pulando": criar_frames_provisorios((0, 80, 200), 1),
-            "agachado": criar_frames_provisorios((0, 120, 255), 1, altura=40),
-        }
+        self.animacoes = carregar_animacoes()
         self.estado = "parado"
         self.frame_atual = 0
         self.ultimo_frame = 0
@@ -66,13 +113,15 @@ class Jogador(pygame.sprite.Sprite):
             self.no_chao = False
 
     def atirar(self, grupo_tiros):
-        """Cria um tiro (para cima ou para o lado), com intervalo de 250 ms."""
+        """Cria um tiro saindo da ponta da arma, com intervalo de 250 ms."""
         agora = pygame.time.get_ticks()
         if agora - self.ultimo_tiro > 250:
             if self.mirando_cima:
-                tiro = Tiro(self.rect.centerx, self.rect.top, self.direcao, para_cima=True)
+                x = self.rect.centerx - 5 * self.direcao
+                tiro = Tiro(x, self.rect.top, self.direcao, para_cima=True)
             else:
-                tiro = Tiro(self.rect.centerx, self.rect.centery, self.direcao)
+                x = self.rect.centerx + 20 * self.direcao
+                tiro = Tiro(x, self.rect.top + 23, self.direcao)
             grupo_tiros.add(tiro)
             self.ultimo_tiro = agora
 
@@ -108,11 +157,16 @@ class Jogador(pygame.sprite.Sprite):
 
     def atualizar_estado(self, teclas):
         """Escolhe a animação conforme o que o jogador está fazendo."""
+        andando = teclas[pygame.K_LEFT] or teclas[pygame.K_RIGHT]
         if not self.no_chao:
             novo = "pulando"
         elif self.agachado:
             novo = "agachado"
-        elif teclas[pygame.K_LEFT] or teclas[pygame.K_RIGHT]:
+        elif self.mirando_cima and andando:
+            novo = "andando_cima"
+        elif self.mirando_cima:
+            novo = "mirando_cima"
+        elif andando:
             novo = "andando"
         else:
             novo = "parado"
@@ -131,16 +185,16 @@ class Jogador(pygame.sprite.Sprite):
         if self.direcao == -1:
             imagem = pygame.transform.flip(imagem, True, False)
         self.image = imagem
-        # o frame agachado é mais baixo: refaz o rect mantendo os pés no lugar
+        # cada animação tem um tamanho: refaz o rect mantendo os pés no lugar
         self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
     def piscar(self):
         """Faz o jogador piscar enquanto está invencível."""
         if self.esta_invencivel():
             visivel = (pygame.time.get_ticks() // 100) % 2 == 0
+            # copia para não deixar o frame original transparente para sempre
+            self.image = self.image.copy()
             self.image.set_alpha(255 if visivel else 80)
-        else:
-            self.image.set_alpha(255)
 
     def update(self, teclas, chao_y):
         """Atualiza o jogador a cada quadro."""
