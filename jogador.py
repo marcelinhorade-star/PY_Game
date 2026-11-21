@@ -126,13 +126,20 @@ class Jogador(pygame.sprite.Sprite):
             self.ultimo_tiro = agora
 
     def aplicar_gravidade(self, chao_y):
-        """Puxa o jogador para baixo até o chão."""
+        """Puxa o jogador para baixo até o chão.
+
+        chao_y é a altura da superfície logo abaixo dos pés (o chão ou uma
+        plataforma), calculada por colisoes.altura_do_chao.
+        """
         self.vel_y += 1
         self.rect.y += self.vel_y
         if self.rect.bottom >= chao_y:
             self.rect.bottom = chao_y
             self.vel_y = 0
             self.no_chao = True
+        else:
+            # saiu da beirada de uma plataforma ou está no ar
+            self.no_chao = False
 
     def esta_invencivel(self):
         """Retorna True se o jogador levou dano há pouco tempo."""
