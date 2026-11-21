@@ -17,6 +17,7 @@ QUANTIDADE_FRAMES = {
     "agachado": 1,
     "mirando_cima": 1,
     "andando_cima": 8,
+    "morrendo": 5,
 }
 
 
@@ -62,6 +63,8 @@ def carregar_animacoes():
             "agachado": criar_frames_provisorios(azul, 1, altura=40),
             "mirando_cima": criar_frames_provisorios(azul, 1),
             "andando_cima": criar_frames_provisorios(azul, 4),
+            # deitado: o mesmo boneco girado 90 graus
+            "morrendo": [pygame.transform.rotate(criar_frames_provisorios(azul, 1)[0], 90)],
         }
     animacoes = {}
     for nome, quantidade in QUANTIDADE_FRAMES.items():
@@ -107,8 +110,8 @@ class Jogador(pygame.sprite.Sprite):
             self.direcao = 1
 
     def pular(self):
-        """Pula se estiver no chão e não estiver agachado."""
-        if self.no_chao and not self.agachado:
+        """Pula se estiver no chão, não estiver agachado e estiver vivo."""
+        if self.no_chao and not self.agachado and self.esta_vivo():
             self.vel_y = -15
             self.no_chao = False
 
@@ -121,6 +124,8 @@ class Jogador(pygame.sprite.Sprite):
 
     def atirar(self, grupo_tiros):
         """Cria um tiro e um clarão na ponta da arma, com intervalo de 250 ms."""
+        if not self.esta_vivo():
+            return  # morto não atira
         agora = pygame.time.get_ticks()
         if agora - self.ultimo_tiro > 250:
             x, y, para_cima = self.ponta_da_arma()
@@ -169,7 +174,9 @@ class Jogador(pygame.sprite.Sprite):
     def atualizar_estado(self, teclas):
         """Escolhe a animação conforme o que o jogador está fazendo."""
         andando = teclas[pygame.K_LEFT] or teclas[pygame.K_RIGHT]
-        if not self.no_chao:
+        if not self.esta_vivo():
+            novo = "morrendo"
+        elif not self.no_chao:
             novo = "pulando"
         elif self.agachado:
             novo = "agachado"
@@ -186,11 +193,18 @@ class Jogador(pygame.sprite.Sprite):
             self.frame_atual = 0
 
     def animar(self):
-        """Troca de frame a cada 100 ms e vira a imagem para a direção certa."""
+        """Troca de frame a cada 100 ms e vira a imagem para a direção certa.
+
+        As animações repetem em loop, menos a de morte, que para no último
+        frame (o jogador fica deitado no chão).
+        """
         agora = pygame.time.get_ticks()
         frames = self.animacoes[self.estado]
         if agora - self.ultimo_frame > 100:
-            self.frame_atual = (self.frame_atual + 1) % len(frames)
+            if self.estado == "morrendo":
+                self.frame_atual = min(self.frame_atual + 1, len(frames) - 1)
+            else:
+                self.frame_atual = (self.frame_atual + 1) % len(frames)
             self.ultimo_frame = agora
         imagem = frames[self.frame_atual]
         if self.direcao == -1:
@@ -200,17 +214,24 @@ class Jogador(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
     def piscar(self):
-        """Faz o jogador piscar enquanto está invencível."""
-        if self.esta_invencivel():
+        """Faz o jogador piscar enquanto está invencível (morto não pisca)."""
+        if self.esta_invencivel() and self.esta_vivo():
             visivel = (pygame.time.get_ticks() // 100) % 2 == 0
             # copia para não deixar o frame original transparente para sempre
             self.image = self.image.copy()
             self.image.set_alpha(255 if visivel else 80)
 
     def update(self, teclas, chao_y):
-        """Atualiza o jogador a cada quadro."""
-        self.ler_mira(teclas)
-        self.mover(teclas)
+        """Atualiza o jogador a cada quadro.
+
+        Morto, ele ignora as teclas: só cai (gravidade) e anima a morte.
+        """
+        if self.esta_vivo():
+            self.ler_mira(teclas)
+            self.mover(teclas)
+        else:
+            self.agachado = False
+            self.mirando_cima = False
         self.aplicar_gravidade(chao_y)
         self.atualizar_estado(teclas)
         self.animar()
