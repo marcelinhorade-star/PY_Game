@@ -9,11 +9,18 @@ ALCANCE = 800
 # funciona não importa de qual pasta o jogo for rodado.
 CAMINHO_BALA = os.path.join(os.path.dirname(__file__), "imagens", "tiro", "bala.png")
 
-# A bala original tem 7x3 pixels; aumentamos igual ao jogador.
+# Clarão que aparece na ponta da arma a cada tiro (do mesmo pack).
+CAMINHO_CLARAO = os.path.join(os.path.dirname(__file__), "imagens", "tiro", "clarao.png")
+
+# Quanto tempo (ms) o clarão fica na tela.
+DURACAO_CLARAO = 70
+
+# As imagens originais são pequenas; aumentamos igual ao jogador.
 ESCALA = 2
 
-# Guarda a imagem depois da primeira vez, para não ler o arquivo a cada tiro.
+# Guardam as imagens depois da primeira vez, para não ler o arquivo a cada tiro.
 _imagem_bala = None
+_imagem_clarao = None
 
 
 def carregar_imagem_bala():
@@ -27,6 +34,15 @@ def carregar_imagem_bala():
         imagem = pygame.image.load(CAMINHO_BALA).convert_alpha()
         _imagem_bala = pygame.transform.scale_by(imagem, ESCALA)
     return _imagem_bala
+
+
+def carregar_imagem_clarao():
+    """Devolve a imagem do clarão virada para a direita (ou None se não existir)."""
+    global _imagem_clarao
+    if _imagem_clarao is None and os.path.isfile(CAMINHO_CLARAO):
+        imagem = pygame.image.load(CAMINHO_CLARAO).convert_alpha()
+        _imagem_clarao = pygame.transform.scale_by(imagem, ESCALA)
+    return _imagem_clarao
 
 
 class Tiro(pygame.sprite.Sprite):
@@ -79,3 +95,52 @@ class Tiro(pygame.sprite.Sprite):
         self.distancia += abs(self.vel_x) + abs(self.vel_y)
         if self.distancia > ALCANCE:
             self.kill()
+
+
+class Clarao(pygame.sprite.Sprite):
+    """Clarão rápido na ponta da arma, que some depois de DURACAO_CLARAO ms.
+
+    Fica no mesmo grupo dos tiros (para ser desenhado junto), mas não é um
+    tiro: o rect dele tem tamanho 0, então nunca colide com nada.
+    """
+
+    def __init__(self, jogador):
+        """Cria o clarão grudado na arma do jogador."""
+        super().__init__()
+        self.jogador = jogador
+        self.criado_em = pygame.time.get_ticks()
+        self.image = pygame.Surface((1, 1), pygame.SRCALPHA)  # trocada no update
+        self.rect = pygame.Rect(0, 0, 0, 0)
+        self.update()
+
+    def update(self):
+        """Segue a ponta da arma (o jogador pode andar) e some quando o tempo acaba."""
+        if pygame.time.get_ticks() - self.criado_em > DURACAO_CLARAO:
+            self.kill()
+            return
+        x, y, para_cima = self.jogador.ponta_da_arma()
+        direcao = self.jogador.direcao
+        clarao = carregar_imagem_clarao()
+        if clarao is None:
+            # Plano B: um círculo amarelo desenhado na hora.
+            clarao = pygame.Surface((10, 10), pygame.SRCALPHA)
+            pygame.draw.circle(clarao, (255, 240, 120), (5, 5), 5)
+
+        # Gira/vira a imagem e acha o canto de cima à esquerda (x0, y0)
+        # para que a base do clarão fique encostada na ponta da arma.
+        if para_cima:
+            self.image = pygame.transform.rotate(clarao, 90)
+            x0 = x - self.image.get_width() // 2
+            y0 = y - self.image.get_height()
+        elif direcao == -1:
+            self.image = pygame.transform.flip(clarao, True, False)
+            x0 = x - self.image.get_width()
+            y0 = y - self.image.get_height() // 2
+        else:
+            self.image = clarao
+            x0 = x
+            y0 = y - self.image.get_height() // 2
+
+        # Tamanho 0: a câmera desenha a imagem a partir deste canto, mas
+        # colliderect/groupcollide nunca acham colisão com um rect vazio.
+        self.rect = pygame.Rect(x0, y0, 0, 0)

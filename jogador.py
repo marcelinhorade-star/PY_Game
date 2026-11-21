@@ -1,6 +1,6 @@
 import os
 import pygame
-from tiro import Tiro
+from tiro import Tiro, Clarao
 
 # Pasta com os frames do jogador, sempre ao lado deste arquivo
 # (funciona não importa de qual pasta o jogo for rodado).
@@ -112,17 +112,21 @@ class Jogador(pygame.sprite.Sprite):
             self.vel_y = -15
             self.no_chao = False
 
+    def ponta_da_arma(self):
+        """Retorna (x, y, para_cima): onde fica a ponta da arma agora."""
+        if self.mirando_cima:
+            # a imagem tem 10 px vazios em cima, então a arma começa em top + 10
+            return self.rect.centerx - 5 * self.direcao, self.rect.top + 10, True
+        return self.rect.centerx + 20 * self.direcao, self.rect.top + 23, False
+
     def atirar(self, grupo_tiros):
-        """Cria um tiro saindo da ponta da arma, com intervalo de 250 ms."""
+        """Cria um tiro e um clarão na ponta da arma, com intervalo de 250 ms."""
         agora = pygame.time.get_ticks()
         if agora - self.ultimo_tiro > 250:
-            if self.mirando_cima:
-                x = self.rect.centerx - 5 * self.direcao
-                tiro = Tiro(x, self.rect.top, self.direcao, para_cima=True)
-            else:
-                x = self.rect.centerx + 20 * self.direcao
-                tiro = Tiro(x, self.rect.top + 23, self.direcao)
+            x, y, para_cima = self.ponta_da_arma()
+            tiro = Tiro(x, y, self.direcao, para_cima=para_cima)
             grupo_tiros.add(tiro)
+            grupo_tiros.add(Clarao(self))
             self.ultimo_tiro = agora
 
     def aplicar_gravidade(self, chao_y):
