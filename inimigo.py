@@ -1,101 +1,71 @@
-"""Inimigos do jogo: o soldado (Inimigo), o Drone, os tiros inimigos e a explosão."""
-import math
+"""Inimigos do jogo: o soldado (classe base Inimigo), o Atirador e o Bazuca.
+
+Sprites do pacote "Generic RUN n' GUN" (Vaca Roxa, licença CC0).
+"""
+import os
 import pygame
 from colisoes import altura_do_chao
-from jogador import criar_frames_provisorios
+from efeitos import TiroInimigo, Foguete, Efeito
+
+PASTA_INIMIGOS = os.path.join(os.path.dirname(__file__), "imagens", "inimigos")
+ESCALA = 2
+
+# Cada folha de sprites é uma tira de quadros do mesmo tamanho, lado a lado.
+# Para cada inimigo: o arquivo, a largura de um quadro e quais quadros formam
+# cada animação (contando da esquerda, começando em 0). "bala" é o quadro
+# que tem só o desenho do tiro.
+FOLHAS = {
+    "soldado": {
+        "arquivo": "ARMob.png", "largura": 32,
+        "parado": [0, 1, 2], "andando": [11, 12, 13, 14, 15, 16, 17, 18],
+        "atirando": [3, 4], "morrendo": [19, 20, 21, 22], "bala": 23,
+    },
+    "atirador": {
+        "arquivo": "SniperMob.png", "largura": 44,
+        "parado": [0], "andando": [0],
+        "atirando": [1, 2, 3, 4, 5, 6, 7, 8], "morrendo": [9, 10, 11, 12], "bala": 13,
+    },
+    "bazuca": {
+        "arquivo": "RPGmob.png", "largura": 44,
+        "parado": [0], "andando": [0],
+        "atirando": [1, 2, 3, 4], "morrendo": [5, 6, 7, 8], "bala": 9,
+    },
+}
+ANIMACOES = ["parado", "andando", "atirando", "morrendo"]
 
 
-def criar_frames_drone(quantidade, cor_luz):
-    """Desenha o drone provisório: corpo cinza e hélice que muda de tamanho a cada frame."""
-    frames = []
-    for i in range(quantidade):
-        frame = pygame.Surface((50, 30), pygame.SRCALPHA)
-        pygame.draw.rect(frame, (90, 90, 110), (5, 10, 40, 16))   # corpo
-        pygame.draw.rect(frame, cor_luz, (38, 14, 5, 5))          # luz (frente)
-        helice = 40 if i % 2 == 0 else 16
-        pygame.draw.line(frame, (30, 30, 30), (25 - helice // 2, 4), (25 + helice // 2, 4), 3)
-        frames.append(frame)
-    return frames
+def carregar_quadros(arquivo, largura):
+    """Corta uma folha de sprites em quadros de mesma largura e aumenta cada um."""
+    folha = pygame.image.load(os.path.join(PASTA_INIMIGOS, arquivo)).convert_alpha()
+    quadros = []
+    for x in range(0, folha.get_width(), largura):
+        quadro = folha.subsurface((x, 0, largura, folha.get_height()))
+        quadros.append(pygame.transform.scale_by(quadro, ESCALA))
+    return quadros
 
 
-def criar_frames_explosao(quantidade=6):
-    """Desenha a explosão provisória: um círculo que cresce e vai sumindo."""
-    frames = []
-    for i in range(quantidade):
-        raio = 8 + i * 6
-        frame = pygame.Surface((2 * raio, 2 * raio), pygame.SRCALPHA)
-        pygame.draw.circle(frame, (255, 160 - i * 20, 0, 255 - i * 35), (raio, raio), raio)
-        frames.append(frame)
-    return frames
+def recortar(imagem):
+    """Devolve só a parte desenhada da imagem (tira a borda transparente)."""
+    return imagem.subsurface(imagem.get_bounding_rect()).copy()
 
 
 def carregar_assets_inimigos():
-    """Cria UMA vez as animações de todos os inimigos e da explosão.
+    """Carrega UMA vez as animações de todos os inimigos e da explosão.
 
     Os inimigos recebem este dicionário pronto, em vez de cada um carregar as
     próprias imagens (mesma ideia do dicionário assets do handout).
     """
-    return {
-        "soldado": {
-            "andando": criar_frames_provisorios((180, 40, 40), 4),
-            "atirando": criar_frames_provisorios((255, 120, 40), 2),
-        },
-        "drone": {
-            "andando": criar_frames_drone(4, (255, 60, 60)),
-            "atirando": criar_frames_drone(2, (255, 230, 0)),
-        },
-        "explosao": criar_frames_explosao(),
-    }
-
-
-class TiroInimigo(pygame.sprite.Sprite):
-    """Projétil dos inimigos; some depois de percorrer uma certa distância."""
-
-    def __init__(self, x, y, vel_x, vel_y):
-        """Cria o tiro com centro em (x, y) e velocidade (vel_x, vel_y)."""
-        super().__init__()
-        self.image = pygame.Surface((8, 8))
-        self.image.fill((255, 70, 40))
-        self.rect = self.image.get_rect(center=(x, y))
-        self.vel_x = vel_x
-        self.vel_y = vel_y
-        self.percorrido = 0
-        self.alcance = 600
-
-    def update(self):
-        """Move o tiro e apaga quando ele passa do alcance."""
-        self.rect.x += self.vel_x
-        self.rect.y += self.vel_y
-        self.percorrido += abs(self.vel_x) + abs(self.vel_y)
-        if self.percorrido > self.alcance:
-            self.kill()
-
-
-class Explosao(pygame.sprite.Sprite):
-    """Animação que toca uma vez no lugar onde um inimigo morreu."""
-
-    def __init__(self, centro, frames):
-        """Cria a explosão centrada em centro, usando a lista de frames."""
-        super().__init__()
-        self.frames = frames
-        self.frame = 0
-        self.image = self.frames[0]
-        self.rect = self.image.get_rect(center=centro)
-        self.last_update = pygame.time.get_ticks()
-        self.frame_ticks = 60
-
-    def update(self):
-        """Avança um frame a cada frame_ticks ms e some no fim da animação."""
-        agora = pygame.time.get_ticks()
-        if agora - self.last_update > self.frame_ticks:
-            self.last_update = agora
-            self.frame += 1
-            if self.frame == len(self.frames):
-                self.kill()
-            else:
-                centro = self.rect.center
-                self.image = self.frames[self.frame]
-                self.rect = self.image.get_rect(center=centro)
+    assets = {}
+    for nome, folha in FOLHAS.items():
+        quadros = carregar_quadros(folha["arquivo"], folha["largura"])
+        animacoes = {}
+        for animacao in ANIMACOES:
+            animacoes[animacao] = [quadros[i] for i in folha[animacao]]
+        animacoes["bala"] = recortar(quadros[folha["bala"]])
+        assets[nome] = animacoes
+    # os 2 primeiros quadros da explosão são só um círculo; usamos o resto
+    assets["explosao"] = carregar_quadros("Explosion_Particle.png", 32)[2:]
+    return assets
 
 
 class Inimigo(pygame.sprite.Sprite):
@@ -105,9 +75,12 @@ class Inimigo(pygame.sprite.Sprite):
     VIDA = 3
     VELOCIDADE = 1
     PONTOS = 100
-    DISTANCIA_VISAO = 300       # a partir daqui ele vê o jogador
-    DISTANCIA_MINIMA = 150      # para de chegar perto e só atira
+    DISTANCIA_VISAO = 350       # a partir daqui ele vê o jogador
+    DISTANCIA_MINIMA = 180      # para de chegar perto e só atira
     RAIO_PATRULHA = 100
+    INTERVALO_TIRO = 1500       # ms entre um tiro e outro
+    VELOCIDADE_TIRO = 6
+    ALTURA_ARMA = 42            # altura do cano da arma, medida a partir dos pés
 
     def __init__(self, x, y, assets, grupos):
         """Cria o inimigo com os pés em (x, y).
@@ -119,18 +92,19 @@ class Inimigo(pygame.sprite.Sprite):
         self.assets = assets
         self.grupos = grupos
         self.animacoes = assets[self.NOME]
-        self.estado = "andando"
+        self.estado = "parado"
         self.frame = 0
         self.last_update = pygame.time.get_ticks()
-        self.frame_ticks = 150
-        self.image = self.animacoes["andando"][0]
+        self.frame_ticks = 120
+        self.image = self.animacoes["parado"][0]
         self.rect = self.image.get_rect(midbottom=(x, y))
         self.x_inicial = x
         self.vida = self.VIDA
         self.direcao = -1
         self.vel_y = 0
+        self.andando = False
         self.ultimo_tiro = pygame.time.get_ticks()
-        self.shoot_ticks = 1500
+        self.atirando_ate = 0       # até quando mostrar a animação de tiro
 
     def distancia_ate(self, jogador):
         """Distância horizontal (em pixels) até o jogador."""
@@ -143,17 +117,19 @@ class Inimigo(pygame.sprite.Sprite):
 
     def mover(self, jogador, plataformas):
         """Persegue o jogador se ele estiver perto; senão, patrulha."""
+        x_antes = self.rect.x
         if self.distancia_ate(jogador) < self.DISTANCIA_VISAO:
             self.direcao = 1 if jogador.rect.centerx > self.rect.centerx else -1
             longe = self.distancia_ate(jogador) > self.DISTANCIA_MINIMA
             if longe and self.tem_chao_a_frente(plataformas):
                 self.rect.x += self.VELOCIDADE * 2 * self.direcao
-        else:
+        elif self.VELOCIDADE > 0:
             saiu_da_area = abs(self.rect.centerx - self.x_inicial) > self.RAIO_PATRULHA
             voltando = (self.x_inicial - self.rect.centerx) * self.direcao > 0
             if (saiu_da_area and not voltando) or not self.tem_chao_a_frente(plataformas):
                 self.direcao *= -1
             self.rect.x += self.VELOCIDADE * self.direcao
+        self.andando = self.rect.x != x_antes
 
     def aplicar_gravidade(self, plataformas):
         """Puxa o inimigo para baixo até a plataforma embaixo dele."""
@@ -165,20 +141,29 @@ class Inimigo(pygame.sprite.Sprite):
             self.vel_y = 0
 
     def criar_tiro(self):
-        """Cria o tiro do soldado: reto, na direção em que ele olha."""
-        return TiroInimigo(self.rect.centerx, self.rect.centery - 8, 6 * self.direcao, 0)
+        """Cria o tiro do soldado: reto, saindo do cano da arma."""
+        x = self.rect.centerx + self.direcao * self.rect.width // 2
+        y = self.rect.bottom - self.ALTURA_ARMA
+        return TiroInimigo(self.animacoes["bala"], x, y, self.VELOCIDADE_TIRO * self.direcao, 0)
 
     def atirar(self, jogador):
-        """Atira de shoot_ticks em shoot_ticks ms enquanto vê o jogador."""
+        """Atira de INTERVALO_TIRO em INTERVALO_TIRO ms enquanto vê o jogador."""
         agora = pygame.time.get_ticks()
-        if self.distancia_ate(jogador) < self.DISTANCIA_VISAO and agora - self.ultimo_tiro > self.shoot_ticks:
+        vendo = self.distancia_ate(jogador) < self.DISTANCIA_VISAO
+        if vendo and agora - self.ultimo_tiro > self.INTERVALO_TIRO:
             self.grupos["tiros_inimigos"].add(self.criar_tiro())
             self.ultimo_tiro = agora
+            self.atirando_ate = agora + len(self.animacoes["atirando"]) * self.frame_ticks
 
     def animar(self):
-        """Escolhe a animação (andando ou atirando) e troca de frame com o tempo."""
+        """Escolhe a animação (parado, andando ou atirando) e troca de frame com o tempo."""
         agora = pygame.time.get_ticks()
-        novo = "atirando" if agora - self.ultimo_tiro < 250 else "andando"
+        if agora < self.atirando_ate:
+            novo = "atirando"
+        elif self.andando:
+            novo = "andando"
+        else:
+            novo = "parado"
         if novo != self.estado:
             self.estado = novo
             self.frame = 0
@@ -186,17 +171,20 @@ class Inimigo(pygame.sprite.Sprite):
         if agora - self.last_update > self.frame_ticks:
             self.last_update = agora
             self.frame = (self.frame + 1) % len(frames)
-        imagem = frames[self.frame % len(frames)]
+        imagem = frames[self.frame]
         if self.direcao == -1:
             imagem = pygame.transform.flip(imagem, True, False)
         self.image = imagem
         self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
     def levar_dano(self, quantidade=1):
-        """Tira vida. Se zerar, cria a explosão, some e retorna True."""
+        """Tira vida. Se zerar, toca a animação de morte, some e retorna True."""
         self.vida -= quantidade
         if self.vida <= 0:
-            self.grupos["efeitos"].add(Explosao(self.rect.center, self.assets["explosao"]))
+            frames = self.animacoes["morrendo"]
+            if self.direcao == -1:
+                frames = [pygame.transform.flip(f, True, False) for f in frames]
+            self.grupos["efeitos"].add(Efeito(frames, self.rect.midbottom, frame_ticks=120))
             self.kill()
             return True
         return False
@@ -209,32 +197,40 @@ class Inimigo(pygame.sprite.Sprite):
         self.animar()
 
 
-class Drone(Inimigo):
-    """Inimigo voador: fica sobre o jogador e solta bombas para baixo.
+class Atirador(Inimigo):
+    """Sniper: fica parado, enxerga de longe e dá tiros rápidos.
 
-    Herda tudo do Inimigo e só muda o que é diferente.
+    Herda tudo do Inimigo; só muda os números da classe.
     """
 
-    NOME = "drone"
+    NOME = "atirador"
     VIDA = 2
-    VELOCIDADE = 2
+    VELOCIDADE = 0
     PONTOS = 150
-    DISTANCIA_MINIMA = 10
+    DISTANCIA_VISAO = 550
+    INTERVALO_TIRO = 2200
+    VELOCIDADE_TIRO = 10
+    ALTURA_ARMA = 36
 
-    def __init__(self, x, y, assets, grupos):
-        """Cria o drone voando com a base em (x, y)."""
-        super().__init__(x, y, assets, grupos)
-        self.y_base = y
-        self.shoot_ticks = 1200
 
-    def tem_chao_a_frente(self, plataformas):
-        """Drones voam, então sempre podem seguir em frente."""
-        return True
+class Bazuca(Inimigo):
+    """Soldado com bazuca: parado, aguenta mais tiros e dispara foguetes que explodem.
 
-    def aplicar_gravidade(self, plataformas):
-        """Drones não caem: só balançam para cima e para baixo."""
-        self.rect.bottom = self.y_base + int(8 * math.sin(pygame.time.get_ticks() / 300))
+    Herda do Inimigo e sobrescreve criar_tiro para atirar um Foguete.
+    """
+
+    NOME = "bazuca"
+    VIDA = 4
+    VELOCIDADE = 0
+    PONTOS = 200
+    DISTANCIA_VISAO = 450
+    INTERVALO_TIRO = 2600
+    VELOCIDADE_TIRO = 4
+    ALTURA_ARMA = 48
 
     def criar_tiro(self):
-        """Cria a bomba do drone, que cai reto para baixo."""
-        return TiroInimigo(self.rect.centerx, self.rect.bottom, 0, 5)
+        """Cria um foguete, que explode quando bate no jogador ou numa plataforma."""
+        x = self.rect.centerx + self.direcao * self.rect.width // 2
+        y = self.rect.bottom - self.ALTURA_ARMA
+        return Foguete(self.animacoes["bala"], x, y, self.VELOCIDADE_TIRO * self.direcao,
+                       self.assets["explosao"], self.grupos["efeitos"])
