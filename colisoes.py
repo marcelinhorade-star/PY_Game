@@ -23,9 +23,12 @@ def tiros_do_jogador_x_inimigos(tiros_jogador, inimigos):
 
     groupcollide devolve {inimigo: [tiros que acertaram]}. O False mantém o
     inimigo no grupo (ele só some quando a vida acaba) e o True apaga os tiros.
+    collide_mask compara os pixels desenhados, e não o retângulo inteiro, então
+    tiro que passa na parte transparente da imagem não conta.
     """
     pontos = 0
-    acertos = pygame.sprite.groupcollide(inimigos, tiros_jogador, False, True)
+    acertos = pygame.sprite.groupcollide(inimigos, tiros_jogador, False, True,
+                                         pygame.sprite.collide_mask)
     for inimigo, tiros in acertos.items():
         if inimigo.levar_dano(len(tiros)):
             pontos += inimigo.PONTOS
@@ -35,10 +38,20 @@ def tiros_do_jogador_x_inimigos(tiros_jogador, inimigos):
 def inimigos_x_jogador(jogador, inimigos, tiros_inimigos):
     """Dá dano no jogador se um tiro inimigo acertar ou se ele encostar num inimigo.
 
-    Os tiros que acertam somem. Retorna True se o jogador perdeu vida.
+    Cada tiro que acerta chama ao_acertar() (o foguete explode, o tiro comum
+    só some). Retorna True se o jogador perdeu vida.
     """
-    tiros = pygame.sprite.spritecollide(jogador, tiros_inimigos, True)
-    encostou = pygame.sprite.spritecollide(jogador, inimigos, False)
+    tiros = pygame.sprite.spritecollide(jogador, tiros_inimigos, False, pygame.sprite.collide_mask)
+    for tiro in tiros:
+        tiro.ao_acertar()
+    encostou = pygame.sprite.spritecollide(jogador, inimigos, False, pygame.sprite.collide_mask)
     if tiros or encostou:
         return jogador.levar_dano()
     return False
+
+
+def tiros_inimigos_x_plataformas(tiros_inimigos, plataformas):
+    """Faz os tiros inimigos pararem quando batem no chão ou numa plataforma."""
+    acertos = pygame.sprite.groupcollide(tiros_inimigos, plataformas, False, False)
+    for tiro in acertos:
+        tiro.ao_acertar()
