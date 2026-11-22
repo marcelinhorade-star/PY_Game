@@ -94,7 +94,7 @@ class Jogador(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(midbottom=(x, y))
         self.vel_y = 0
         self.no_chao = True
-        self.vida = 3
+        self.vida = 5               # era 3 (agora é preciso matar todos os inimigos)
         self.direcao = 1  # 1 = direita, -1 = esquerda
         self.ultimo_tiro = 0
         self.ultimo_dano = -10000   # momento (ms) do último dano

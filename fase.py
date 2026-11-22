@@ -4,6 +4,12 @@ from inimigo import Inimigo, Atirador, Bazuca, carregar_assets_inimigos
 from cenario import Camada, Tileset
 from colisoes import tiros_inimigos_x_plataformas
 
+# O jogador não pode passar mais que isso (em pixels) à frente do inimigo vivo
+# mais atrasado. Como a câmera só anda para a frente, isso garante que nenhum
+# inimigo fica para trás fora da tela: é preciso matar todos para avançar,
+# inclusive os que estão em cima das plataformas.
+DISTANCIA_MAX_INIMIGO = 300
+
 # Qual classe cria cada tipo de inimigo escrito na lista da fase.
 TIPOS_INIMIGOS = {"soldado": Inimigo, "atirador": Atirador, "bazuca": Bazuca}
 
@@ -107,10 +113,24 @@ class Fase:
 
     def atualizar(self, jogador):
         """Atualiza inimigos, tiros inimigos e efeitos (uma vez por quadro)."""
+        # parede invisível: não deixa o jogador passar dos inimigos vivos
+        if jogador.rect.right > self.limite_do_jogador():
+            jogador.rect.right = self.limite_do_jogador()
         self.inimigos.update(jogador, self.plataformas)
         self.tiros_inimigos.update()
         tiros_inimigos_x_plataformas(self.tiros_inimigos, self.plataformas)
         self.efeitos.update()
+
+    def limite_do_jogador(self):
+        """Até onde (x) o jogador pode andar para a direita agora.
+
+        Enquanto houver inimigo vivo, o limite é o inimigo mais à esquerda mais
+        DISTANCIA_MAX_INIMIGO. Sem inimigos, é o fim do mapa.
+        """
+        if len(self.inimigos) == 0:
+            return self.comprimento
+        mais_atrasado = min(inimigo.rect.centerx for inimigo in self.inimigos)
+        return mais_atrasado + DISTANCIA_MAX_INIMIGO
 
     def desenhar(self, tela, camera):
         """Desenha o fundo (com parallax) e tudo da fase, deslocado pela câmera."""
