@@ -8,7 +8,7 @@ Qualquer arquivo pode usar assim:
 import os
 
 # ---------------------------------------------------------------- Janela
-TITULO = "PY Game"
+TITULO = "Linha de fogo"
 LARGURA = 960      # largura da janela em pixels
 ALTURA = 600       # altura da janela (o chão das fases fica em y = 550 e tem 50 px)
 FPS = 60           # quadros por segundo (usado no clock.tick)
