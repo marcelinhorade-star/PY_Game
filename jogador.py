@@ -1,3 +1,11 @@
+"""Jogador controlado pelo usuário (Pessoa A).
+
+Define a classe Jogador, que anda, pula, agacha, mira para cima, atira,
+leva dano (com invencibilidade e piscar) e troca de animação conforme o
+estado. Também tem as funções que carregam os frames do pacote de sprites
+"Generic RUN n' GUN" (CC0), com retângulos provisórios caso as imagens
+não existam.
+"""
 import os
 import pygame
 from tiro import Tiro, Clarao

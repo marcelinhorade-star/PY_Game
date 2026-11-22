@@ -1,3 +1,10 @@
+"""Tiros do jogador (Pessoa A).
+
+Define a classe Tiro (bala que anda na horizontal ou para cima e some
+depois de ALCANCE pixels) e a classe Clarao (brilho rápido na ponta da
+arma). As imagens vêm do pacote "Generic RUN n' GUN" (CC0) e são
+carregadas uma vez só.
+"""
 import os
 import pygame
 
