@@ -1,5 +1,6 @@
 """Fases do jogo: cenário, plataformas, inimigos, comprimento do mapa e fim da fase."""
 import pygame
+import config
 from inimigo import Inimigo, Atirador, Bazuca, carregar_assets_inimigos
 from cenario import Camada, Tileset
 from colisoes import tiros_inimigos_x_plataformas
@@ -23,7 +24,11 @@ FASES = [
         "camadas": [("subway_BG.png", 0.3)],
         "tileset": "Subway_tiles.png",
         "plataformas": [
-            (0, 550, 3000, 50),     # chão
+            # chão, com 3 buracos (cair num buraco tira 1 vida)
+            (0, 550, 560, 50),
+            (760, 550, 550, 50),    # buraco de 560 a 760: passe pelas plataformas
+            (1450, 550, 970, 50),   # buraco de 1310 a 1450
+            (2560, 550, 440, 50),   # buraco de 2420 a 2560
             (400, 450, 150, 32),
             (650, 400, 150, 32),
             (1100, 450, 200, 32),
@@ -47,7 +52,11 @@ FASES = [
         "camadas": [("nuvens_3.png", 0.05), ("nuvens_2.png", 0.15), ("nuvens_1.png", 0.3)],
         "tileset": "tiles_out.png",
         "plataformas": [
-            (0, 550, 3600, 50),     # chão
+            # chão, com 3 buracos
+            (0, 550, 960, 50),
+            (1240, 550, 630, 50),   # buraco de 960 a 1240: passe pelas plataformas
+            (1990, 550, 690, 50),   # buraco de 1870 a 1990
+            (2890, 550, 710, 50),   # buraco de 2680 a 2890: desça da plataforma alta
             (300, 460, 128, 32),
             (500, 390, 128, 32),
             (750, 450, 200, 32),
@@ -102,6 +111,7 @@ class Fase:
         for x, y, largura, altura in dados["plataformas"]:
             self.plataformas.add(Plataforma(x, y, largura, altura, tileset))
 
+        self.ponto_seguro = None    # último lugar com chão firme onde o jogador pisou
         self.inimigos = pygame.sprite.Group()
         self.tiros_inimigos = pygame.sprite.Group()
         self.efeitos = pygame.sprite.Group()
@@ -116,10 +126,29 @@ class Fase:
         # parede invisível: não deixa o jogador passar dos inimigos vivos
         if jogador.rect.right > self.limite_do_jogador():
             jogador.rect.right = self.limite_do_jogador()
+        self.verificar_queda(jogador)
         self.inimigos.update(jogador, self.plataformas)
         self.tiros_inimigos.update()
         tiros_inimigos_x_plataformas(self.tiros_inimigos, self.plataformas)
         self.efeitos.update()
+
+    def verificar_queda(self, jogador):
+        """Buracos: se o jogador cair, perde 1 vida e volta para o último chão firme.
+
+        Enquanto ele está em cima de uma plataforma (longe da beirada), guardamos
+        a posição em ponto_seguro. Se ele passar da parte de baixo da tela, caiu.
+        """
+        if jogador.no_chao:
+            x, y = jogador.rect.midbottom
+            for plataforma in self.plataformas:
+                longe_da_beirada = plataforma.rect.left + 40 < x < plataforma.rect.right - 40
+                if plataforma.rect.top == y and longe_da_beirada:
+                    self.ponto_seguro = (x, y)
+        elif jogador.rect.top > config.ALTURA and jogador.esta_vivo():
+            jogador.levar_dano()
+            if jogador.esta_vivo():     # se morreu, deixa cair (main.py mostra o game over)
+                jogador.rect.midbottom = self.ponto_seguro
+                jogador.vel_y = 0
 
     def limite_do_jogador(self):
         """Até onde (x) o jogador pode andar para a direita agora.
