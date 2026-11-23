@@ -77,9 +77,9 @@ O jogo é orientado a objetos e cada arquivo cuida de uma parte:
 
 Usamos IA generativa no projeto, como permite a política da disciplina:
 
-- **Claude (Anthropic)**: usado pela Pessoa C para escrever, passo a passo e com
+- **Claude (Anthropic)**: usado por victor para escrever, passo a passo e com
   explicações, a primeira versão de `config.py`, `main.py`, `telas.py`, `hud.py`
   e `som.py`, para escolher e converter os sons e para escrever este README.
-  Tudo foi revisado e testado pelo grupo. Estimativa: XX% desses arquivos foi
-  gerado por IA. Chat: LINK DO CHAT EXPORTADO.
+  Tudo foi revisado e testado pelo grupo. Estimativa: 90% desses arquivos foi
+  gerado por IA. Chat: https://claude.ai/share/5c09a0a7-1d5d-4425-89dc-f31f8f3e1eba
 - OUTROS USOS DE IA PELO GRUPO (Marcelo, Gabriel): DESCREVAM AQUI, COM OS LINKS.
