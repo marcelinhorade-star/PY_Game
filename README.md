@@ -120,5 +120,6 @@ Usamos IA generativa no projeto, como permite a política da disciplina:
   para balancear o jogo (números dos inimigos em `inimigo.py`, buracos no chão,
   plataforma móvel e parede invisível em `fase.py`, tiro na diagonal), testando
   cada mudança com simulações do jogo. Tudo foi revisado e testado pelo grupo.
-  Estimativa: XX% desses arquivos foi gerado por IA. Chat: LINK DO CHAT EXPORTADO.
+  Estimativa: 85% desses arquivos foi gerado por IA. Conversas:
+  [projeto no Claude](https://claude.ai/code/project/chan_014E4dHx1o6LGTzQDRm4Mp3G).
 - USO DE IA PELO GABRIEL: DESCREVA AQUI, COM O LINK (ou escreva que não usou).
