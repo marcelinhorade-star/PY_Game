@@ -36,7 +36,7 @@ você enfrenta o chefe, o Comandante: só dá para vencer o jogo derrotando ele.
 
 ## Vídeo
 
-LINK DO VÍDEO AQUI
+[Assista ao vídeo do jogo no YouTube](https://youtu.be/nEh-VetZ4NQ)
 
 ## Como instalar e rodar
 
