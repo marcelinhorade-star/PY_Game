@@ -32,7 +32,7 @@ você enfrenta o chefe, o Comandante: só dá para vencer o jogo derrotando ele.
 |---|---|
 | Marcelo (`marcelinhorade-star`) | Jogador, personagens, tiro e chefe: `jogador.py`, `personagens.py`, `tiro.py`, `chefe.py` |
 | Gabriel Gonçalves (`Gabriel2763`) | Inimigos, colisões, câmera, cenário e fases: `inimigo.py`, `colisoes.py`, `camera.py`, `cenario.py`, `efeitos.py`, `fase.py` |
-| Victor Kim (`victortykim`)| Loop principal, telas, HUD, som e README: `main.py`, `config.py`, `telas.py`, `hud.py`, `som.py` |
+| Victor Kim (`victortykim`) | Loop principal, telas, HUD, som e README: `main.py`, `config.py`, `telas.py`, `hud.py`, `som.py` |
 
 ## Vídeo
 
@@ -109,10 +109,10 @@ recortados das folhas de sprites do próprio pacote.
 
 Usamos IA generativa no projeto, como permite a política da disciplina:
 
-- **Claude (Anthropic)**: usado pela Pessoa C para escrever, passo a passo e com
+- **Claude (Anthropic)**: usado pelo Victor para escrever, passo a passo e com
   explicações, a primeira versão de `config.py`, `main.py`, `telas.py`, `hud.py`
   e `som.py`, para escolher e converter os sons e para escrever este README.
-  Tudo foi revisado e testado pelo grupo. Chat: LINK DO CHAT EXPORTADO.
+  Tudo foi revisado e testado pelo grupo. Chat: https://claude.ai/share/5c09a0a7-1d5d-4425-89dc-f31f8f3e1eba
 - **Claude (Anthropic)**: usado pelo Marcelo para escrever, passo a passo e com
   explicações, `jogador.py`, `tiro.py`, `personagens.py` e `chefe.py`, e para
   recortar as imagens do jogador e do tiro do pacote de sprites. Também foi usado
