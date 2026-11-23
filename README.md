@@ -112,14 +112,12 @@ Usamos IA generativa no projeto, como permite a política da disciplina:
 - **Claude (Anthropic)**: usado pela Pessoa C para escrever, passo a passo e com
   explicações, a primeira versão de `config.py`, `main.py`, `telas.py`, `hud.py`
   e `som.py`, para escolher e converter os sons e para escrever este README.
-  Tudo foi revisado e testado pelo grupo. Estimativa: XX% desses arquivos foi
-  gerado por IA. Chat: LINK DO CHAT EXPORTADO.
+  Tudo foi revisado e testado pelo grupo. Chat: LINK DO CHAT EXPORTADO.
 - **Claude (Anthropic)**: usado pelo Marcelo para escrever, passo a passo e com
   explicações, `jogador.py`, `tiro.py`, `personagens.py` e `chefe.py`, e para
   recortar as imagens do jogador e do tiro do pacote de sprites. Também foi usado
   para balancear o jogo (números dos inimigos em `inimigo.py`, buracos no chão,
   plataforma móvel e parede invisível em `fase.py`, tiro na diagonal), testando
   cada mudança com simulações do jogo. Tudo foi revisado e testado pelo grupo.
-  Estimativa: 85% desses arquivos foi gerado por IA. Conversas:
-  [projeto no Claude](https://claude.ai/code/project/chan_014E4dHx1o6LGTzQDRm4Mp3G).
+  Conversas: [projeto no Claude](https://claude.ai/code/project/chan_014E4dHx1o6LGTzQDRm4Mp3G).
 - USO DE IA PELO GABRIEL: DESCREVA AQUI, COM O LINK (ou escreva que não usou).
