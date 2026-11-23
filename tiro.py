@@ -73,7 +73,7 @@ class Tiro(pygame.sprite.Sprite):
     """Projétil que anda em linha reta, na horizontal ou para cima."""
 
     def __init__(self, x, y, direcao, para_cima=False, desvio=0,
-                 velocidade=12, alcance=ALCANCE, dano=1, tamanho=1):
+                 velocidade=12, alcance=ALCANCE, dano=1, tamanho=1, diagonal=False):
         """Cria o tiro em (x, y).
 
         direcao: 1 (direita) ou -1 (esquerda), usado no tiro horizontal.
@@ -81,9 +81,16 @@ class Tiro(pygame.sprite.Sprite):
         desvio: velocidade "de lado" (para cima/baixo no tiro horizontal,
             para os lados no tiro para cima); é o que abre o leque da escopeta.
         velocidade, alcance, dano e tamanho vêm da arma (dicionário ARMAS).
+        diagonal: se True, o tiro vai para cima e para o lado (45 graus).
         """
         super().__init__()
-        if para_cima:
+        if diagonal:
+            # 0.7 é mais ou menos o seno de 45 graus: assim a bala anda o mesmo
+            # tanto para o lado e para cima, com a mesma rapidez do tiro reto.
+            passo = round(velocidade * 0.7)
+            self.vel_x = passo * direcao + desvio
+            self.vel_y = -passo + desvio * direcao
+        elif para_cima:
             self.vel_x = desvio
             self.vel_y = -velocidade
         else:
@@ -96,7 +103,12 @@ class Tiro(pygame.sprite.Sprite):
         if bala is not None and tamanho != 1:
             bala = pygame.transform.scale_by(bala, tamanho)   # bala do canhão é maior
         if bala is not None:
-            if para_cima:
+            if diagonal:
+                # 45 graus deixa a bala apontando para cima e para a direita
+                self.image = pygame.transform.rotate(bala, 45)
+                if direcao == -1:
+                    self.image = pygame.transform.flip(self.image, True, False)
+            elif para_cima:
                 # rotate gira no sentido anti-horário: 90 graus deixa a
                 # bala, que aponta para a direita, apontando para cima.
                 self.image = pygame.transform.rotate(bala, 90)
@@ -129,7 +141,7 @@ class Tiro(pygame.sprite.Sprite):
             self.kill()
 
 
-def criar_tiros(arma, x, y, direcao, para_cima):
+def criar_tiros(arma, x, y, direcao, para_cima, diagonal=False):
     """Cria as balas de UM disparo da arma e devolve uma lista com elas.
 
     arma é um dos dicionários de ARMAS. Com 3 balas e abertura 2, os desvios
@@ -140,7 +152,8 @@ def criar_tiros(arma, x, y, direcao, para_cima):
     for i in range(arma["balas"]):
         desvio = (i - meio) * arma["abertura"]
         tiros.append(Tiro(x, y, direcao, para_cima, desvio,
-                          arma["velocidade"], arma["alcance"], arma["dano"], arma["tamanho"]))
+                          arma["velocidade"], arma["alcance"], arma["dano"], arma["tamanho"],
+                          diagonal))
     return tiros
 
 
@@ -180,7 +193,13 @@ class Clarao(pygame.sprite.Sprite):
 
         # Gira/vira a imagem e acha o canto de cima à esquerda (x0, y0)
         # para que a base do clarão fique encostada na ponta da arma.
-        if para_cima:
+        if self.jogador.mirando_diagonal:
+            self.image = pygame.transform.rotate(clarao, 45)
+            if direcao == -1:
+                self.image = pygame.transform.flip(self.image, True, False)
+            x0 = x - self.image.get_width() // 2
+            y0 = y - self.image.get_height() // 2
+        elif para_cima:
             self.image = pygame.transform.rotate(clarao, 90)
             x0 = x - self.image.get_width() // 2
             y0 = y - self.image.get_height()

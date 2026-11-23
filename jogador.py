@@ -136,11 +136,15 @@ class Jogador(pygame.sprite.Sprite):
         self.invencivel_ms = 1000   # tempo de invencibilidade após dano
         self.agachado = False       # seta para baixo
         self.mirando_cima = False   # seta para cima
+        self.mirando_diagonal = False   # seta para cima + seta para o lado
 
     def ler_mira(self, teclas):
         """Vê se o jogador está agachado ou mirando para cima."""
         self.agachado = teclas[pygame.K_DOWN] and self.no_chao
         self.mirando_cima = teclas[pygame.K_UP] and not self.agachado
+        andando = teclas[pygame.K_LEFT] or teclas[pygame.K_RIGHT]
+        # cima + lado = tiro na diagonal (bom para os inimigos das plataformas)
+        self.mirando_diagonal = self.mirando_cima and andando
 
     def mover(self, teclas):
         """Anda para os lados com as setas (mais devagar agachado)."""
@@ -160,6 +164,8 @@ class Jogador(pygame.sprite.Sprite):
 
     def ponta_da_arma(self):
         """Retorna (x, y, para_cima): onde fica a ponta da arma agora."""
+        if self.mirando_diagonal:
+            return self.rect.centerx + 15 * self.direcao, self.rect.top + 14, False
         if self.mirando_cima:
             # a imagem tem 10 px vazios em cima, então a arma começa em top + 10
             return self.rect.centerx - 5 * self.direcao, self.rect.top + 10, True
@@ -176,7 +182,8 @@ class Jogador(pygame.sprite.Sprite):
         agora = pygame.time.get_ticks()
         if agora - self.ultimo_tiro > self.arma["intervalo"]:
             x, y, para_cima = self.ponta_da_arma()
-            grupo_tiros.add(criar_tiros(self.arma, x, y, self.direcao, para_cima))
+            grupo_tiros.add(criar_tiros(self.arma, x, y, self.direcao, para_cima,
+                                        self.mirando_diagonal))
             grupo_tiros.add(Clarao(self))
             self.ultimo_tiro = agora
 
