@@ -7,9 +7,9 @@ from cenario import Camada, Tileset
 from colisoes import tiros_inimigos_x_plataformas
 
 # O jogador não pode passar mais que isso (em pixels) à frente do inimigo vivo
-# mais atrasado. Como a câmera só anda para a frente, isso garante que nenhum
-# inimigo fica para trás fora da tela: é preciso matar todos para avançar,
-# inclusive os que estão em cima das plataformas.
+# mais atrasado. Assim ele não consegue correr direto para o fim do mapa: é
+# preciso matar todos para avançar, inclusive os que estão em cima das
+# plataformas. Para trás ele pode voltar à vontade (a câmera segue).
 DISTANCIA_MAX_INIMIGO = 300
 
 # Qual classe cria cada tipo de inimigo escrito na lista da fase.
@@ -92,6 +92,7 @@ FASES = [
     {
         # fase 3: de noite, com o chefe no fim (arena de 2340 a 3400, sem buracos)
         "comprimento": 3400,
+        "inicio_arena": 2340,   # depois de entrar aqui, não dá para voltar até o chefe morrer
         "cor_fundo": (18, 16, 40),
         "camadas": [("nuvens_3.png", 0.05), ("nuvens_2.png", 0.15), ("nuvens_1.png", 0.3)],
         "tom": (70, 80, 255),
@@ -153,6 +154,8 @@ class Fase:
             self.plataformas.add(Plataforma(x, y, largura, altura, tileset))
 
         self.ponto_seguro = None    # último lugar com chão firme onde o jogador pisou
+        self.inicio_arena = dados.get("inicio_arena")   # None nas fases sem chefe
+        self.arena_fechada = False
         self.inimigos = pygame.sprite.Group()
         self.tiros_inimigos = pygame.sprite.Group()
         self.efeitos = pygame.sprite.Group()
@@ -171,6 +174,7 @@ class Fase:
         # parede invisível: não deixa o jogador passar dos inimigos vivos
         if jogador.rect.right > self.limite_do_jogador():
             jogador.rect.right = self.limite_do_jogador()
+        self.prender_na_arena(jogador)
         self.verificar_queda(jogador)
         self.inimigos.update(jogador, self.plataformas)
         self.tiros_inimigos.update()
@@ -194,6 +198,22 @@ class Fase:
             if jogador.esta_vivo():     # se morreu, deixa cair (main.py mostra o game over)
                 jogador.rect.midbottom = self.ponto_seguro
                 jogador.vel_y = 0
+
+    def prender_na_arena(self, jogador):
+        """Arena do chefe: quando o jogador entra nela, a arena fecha atrás dele.
+
+        Só fecha se o chefe for o único inimigo vivo (senão o jogador ficaria
+        preso longe de um inimigo esquecido). Abre de novo quando o chefe morre.
+        """
+        if self.inicio_arena is None or self.chefe is None:
+            return
+        if not self.chefe.alive():
+            self.arena_fechada = False
+            return
+        if len(self.inimigos) == 1 and jogador.rect.left >= self.inicio_arena:
+            self.arena_fechada = True
+        if self.arena_fechada and jogador.rect.left < self.inicio_arena:
+            jogador.rect.left = self.inicio_arena
 
     def limite_do_jogador(self):
         """Até onde (x) o jogador pode andar para a direita agora.

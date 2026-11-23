@@ -4,8 +4,8 @@
 class Camera:
     """Guarda quanto o mundo está deslocado em x e desenha tudo com esse desvio.
 
-    Como no Metal Slug, a câmera só anda para a frente: o jogador nunca volta
-    para trás da borda esquerda da tela.
+    A câmera segue o jogador para os dois lados (ele pode voltar no mapa),
+    mas nunca mostra nada antes do começo nem depois do fim da fase.
     """
 
     def __init__(self, largura_tela, comprimento_fase):
@@ -15,15 +15,18 @@ class Camera:
         self.comprimento_fase = comprimento_fase
 
     def atualizar(self, jogador):
-        """Avança a câmera quando o jogador passa de 1/3 da tela e o prende nas bordas."""
-        alvo = jogador.rect.centerx - self.largura_tela // 3
-        maximo = self.comprimento_fase - self.largura_tela
-        if alvo > self.x:
-            self.x = min(alvo, maximo)
-        if jogador.rect.left < self.x:
-            jogador.rect.left = self.x
+        """Deixa o jogador a 1/3 da tela (sobra mais espaço para ver à frente).
+
+        A câmera vai para a frente e para trás junto com o jogador, mas fica
+        presa entre 0 e o fim do mapa. O jogador também não sai do mapa.
+        """
+        if jogador.rect.left < 0:
+            jogador.rect.left = 0
         if jogador.rect.right > self.comprimento_fase:
             jogador.rect.right = self.comprimento_fase
+        alvo = jogador.rect.centerx - self.largura_tela // 3
+        maximo = self.comprimento_fase - self.largura_tela
+        self.x = max(0, min(alvo, maximo))   # prende o alvo entre 0 e maximo
 
     def aplicar(self, rect):
         """Converte um rect do mundo para a posição dele na tela."""
