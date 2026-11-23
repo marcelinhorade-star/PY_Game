@@ -6,6 +6,7 @@ A classe Jogo guarda o estado atual do jogo e repete, 60 vezes por segundo:
     3. desenhar()        -> pinta a tela do estado atual
 
 Estados:  "inicio" -> "jogando" -> "game_over" ou "vitoria" -> "inicio" ...
+São 3 fases (lista FASES do fase.py); a vitória vem depois de matar o chefe da fase 3.
 """
 import pygame
 
@@ -20,6 +21,7 @@ from som import Som
 
 POSICAO_INICIAL = (100, 550)   # pés do jogador no começo de cada fase (chão em y = 550)
 ESPERA_GAME_OVER = 1500        # ms entre a morte e a tela de game over (animação de morte)
+VIDAS_POR_FASE = 2             # vidas que o jogador recupera ao entrar numa fase nova
 
 
 class Jogo:
@@ -60,12 +62,14 @@ class Jogo:
         self.mudar_estado("jogando")
 
     def carregar_fase(self, numero):
-        """Cria a fase e a câmera, e põe o jogador de volta no começo do mapa."""
+        """Cria a fase e a câmera, põe o jogador de volta no começo do mapa e devolve 2 vidas."""
         self.numero_fase = numero
         self.fase = Fase(numero)
         self.camera = Camera(config.LARGURA, self.fase.comprimento)
         self.jogador.rect.midbottom = POSICAO_INICIAL
         self.tiros_jogador.empty()
+        # recupera um pouco de vida a cada fase (sem passar da vida máxima do HUD)
+        self.jogador.vida = min(self.jogador.vida + VIDAS_POR_FASE, self.hud.vida_max)
 
     # ------------------------------------------------------------ loop
     def rodar(self):

@@ -4,13 +4,14 @@ Jogo de tiro com rolagem lateral (no estilo *run and gun*) feito em Python com
 pygame-ce para o Projeto Final de **Design de Software** (Insper, 2026.2).
 
 Atravesse as fases atirando nos soldados inimigos, desvie dos tiros e dos
-foguetes e chegue ao fim do mapa sem perder todas as vidas.
+foguetes e passe pelas 3 fases sem perder todas as vidas. No fim da fase 3
+você enfrenta o chefe, o Comandante: só dá para vencer o jogo derrotando ele.
 
 ## Integrantes
 
 | Integrante | Parte do projeto |
 |---|---|
-| Marcelo (`marcelinhorade-star`) | Jogador e tiro: `jogador.py`, `tiro.py` |
+| Marcelo (`marcelinhorade-star`) | Jogador, tiro e chefe: `jogador.py`, `tiro.py`, `chefe.py` |
 | Gabriel Gonçalves (`Gabriel2763`) | Inimigos, colisões, câmera, cenário e fases: `inimigo.py`, `colisoes.py`, `camera.py`, `cenario.py`, `efeitos.py`, `fase.py` |
 | SEU NOME (seu usuário do GitHub) | Loop principal, telas, HUD, som e README: `main.py`, `config.py`, `telas.py`, `hud.py`, `som.py` |
 
@@ -57,6 +58,7 @@ O jogo é orientado a objetos e cada arquivo cuida de uma parte:
 - `jogador.py` / `tiro.py`: o personagem, suas animações e os tiros.
 - `fase.py`, `cenario.py`, `camera.py`, `inimigo.py`, `efeitos.py`, `colisoes.py`:
   mapas das fases, fundo com paralaxe, câmera, inimigos, explosões e colisões.
+- `chefe.py`: o chefe da fase 3 (soldado gigante com barra de vida e 2 ataques).
 
 ## Créditos
 

@@ -2,6 +2,7 @@
 import pygame
 import config
 from inimigo import Inimigo, Atirador, Bazuca, carregar_assets_inimigos
+from chefe import Chefe
 from cenario import Camada, Tileset
 from colisoes import tiros_inimigos_x_plataformas
 
@@ -12,11 +13,17 @@ from colisoes import tiros_inimigos_x_plataformas
 DISTANCIA_MAX_INIMIGO = 300
 
 # Qual classe cria cada tipo de inimigo escrito na lista da fase.
-TIPOS_INIMIGOS = {"soldado": Inimigo, "atirador": Atirador, "bazuca": Bazuca}
+TIPOS_INIMIGOS = {"soldado": Inimigo, "atirador": Atirador, "bazuca": Bazuca, "chefe": Chefe}
+
+# Depois que o chefe morre, espera este tempo (ms) para as explosões tocarem
+# antes de mostrar a tela de vitória.
+ESPERA_DEPOIS_DO_CHEFE = 2000
 
 # Cada fase é um dicionário. Tudo em coordenadas do MUNDO (o mapa inteiro):
 # plataformas são (x, y, largura, altura) e inimigos são (tipo, x, y dos pés).
 # "camadas" são as imagens de fundo e o quanto cada uma anda com a câmera.
+# "tom" (opcional) é uma cor que multiplica as camadas: (255, 255, 255) não muda nada,
+# cores mais escuras escurecem o fundo (a fase 3 usa isso para virar noite).
 FASES = [
     {
         "comprimento": 3000,
@@ -82,6 +89,37 @@ FASES = [
             ("bazuca", 3450, 550),
         ],
     },
+    {
+        # fase 3: de noite, com o chefe no fim (arena de 2340 a 3400, sem buracos)
+        "comprimento": 3400,
+        "cor_fundo": (18, 16, 40),
+        "camadas": [("nuvens_3.png", 0.05), ("nuvens_2.png", 0.15), ("nuvens_1.png", 0.3)],
+        "tom": (70, 80, 255),
+        "tileset": "Subway_tiles.png",
+        "plataformas": [
+            # chão, com 3 buracos
+            (0, 550, 700, 50),
+            (840, 550, 610, 50),    # buraco de 700 a 840: dá para pular
+            (1700, 550, 500, 50),   # buraco de 1450 a 1700: use a plataforma do meio
+            (2340, 550, 1060, 50),  # buraco de 2200 a 2340: dá para pular; depois é a arena
+            (350, 440, 160, 32),
+            (950, 440, 200, 32),
+            (1510, 450, 130, 32),   # plataforma no meio do buraco largo
+            (1800, 420, 160, 32),
+            (2550, 420, 160, 32),   # na arena: proteção contra a chuva de foguetes
+            (2950, 420, 160, 32),
+        ],
+        "inimigos": [
+            ("soldado", 550, 550),
+            ("atirador", 430, 440),
+            ("soldado", 1050, 440),
+            ("bazuca", 1300, 550),
+            ("atirador", 1880, 420),
+            ("soldado", 2000, 550),
+            ("bazuca", 2150, 550),
+            ("chefe", 3150, 550),
+        ],
+    },
 ]
 
 
@@ -105,6 +143,9 @@ class Fase:
         self.comprimento = dados["comprimento"]
         self.cor_fundo = dados["cor_fundo"]
         self.camadas = [Camada(arquivo, fator) for arquivo, fator in dados["camadas"]]
+        if "tom" in dados:
+            for camada in self.camadas:
+                camada.imagem.fill(dados["tom"], special_flags=pygame.BLEND_RGB_MULT)
 
         tileset = Tileset(dados["tileset"])
         self.plataformas = pygame.sprite.Group()
@@ -117,9 +158,13 @@ class Fase:
         self.efeitos = pygame.sprite.Group()
         grupos = {"tiros_inimigos": self.tiros_inimigos, "efeitos": self.efeitos}
         assets = carregar_assets_inimigos()   # imagens carregadas uma vez só
+        self.chefe = None           # só a última fase tem chefe
         for tipo, x, y in dados["inimigos"]:
             classe = TIPOS_INIMIGOS[tipo]
-            self.inimigos.add(classe(x, y, assets, grupos))
+            inimigo = classe(x, y, assets, grupos)
+            self.inimigos.add(inimigo)
+            if tipo == "chefe":
+                self.chefe = inimigo
 
     def atualizar(self, jogador):
         """Atualiza inimigos, tiros inimigos e efeitos (uma vez por quadro)."""
@@ -170,9 +215,19 @@ class Fase:
         camera.desenhar_grupo(tela, self.inimigos)
         camera.desenhar_grupo(tela, self.tiros_inimigos)
         camera.desenhar_grupo(tela, self.efeitos)
+        if self.chefe is not None and self.chefe.alive() and camera.esta_visivel(self.chefe.rect):
+            self.chefe.desenhar_barra(tela)
 
     def terminou(self, jogador):
-        """Retorna True quando o jogador chega ao fim do mapa."""
+        """Retorna True quando a fase acabou.
+
+        Fase com chefe: acaba um pouco depois de o chefe morrer.
+        Fase sem chefe: acaba quando o jogador chega ao fim do mapa.
+        """
+        if self.chefe is not None:
+            if self.chefe.morreu_em is None:
+                return False
+            return pygame.time.get_ticks() - self.chefe.morreu_em > ESPERA_DEPOIS_DO_CHEFE
         return jogador.rect.right >= self.comprimento
 
 
