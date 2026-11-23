@@ -148,7 +148,8 @@ class Clarao(pygame.sprite.Sprite):
     """Clarão rápido na ponta da arma, que some depois de DURACAO_CLARAO ms.
 
     Fica no mesmo grupo dos tiros (para ser desenhado junto), mas não é um
-    tiro: o rect dele tem tamanho 0, então nunca colide com nada.
+    tiro: a máscara dele é vazia (nenhum pixel "sólido"), então o
+    collide_mask nunca acha colisão com ele, e o dano dele é 0.
     """
 
     def __init__(self, jogador):
@@ -158,6 +159,10 @@ class Clarao(pygame.sprite.Sprite):
         self.criado_em = pygame.time.get_ticks()
         self.image = pygame.Surface((1, 1), pygame.SRCALPHA)  # trocada no update
         self.rect = pygame.Rect(0, 0, 0, 0)
+        self.dano = 0
+        # Máscara de 1x1 sem nenhum pixel marcado: o collide_mask usa esta
+        # máscara (em vez de criar uma a partir da imagem) e nunca colide.
+        self.mask = pygame.mask.Mask((1, 1))
         self.update()
 
     def update(self):
@@ -188,6 +193,5 @@ class Clarao(pygame.sprite.Sprite):
             x0 = x
             y0 = y - self.image.get_height() // 2
 
-        # Tamanho 0: a câmera desenha a imagem a partir deste canto, mas
-        # colliderect/groupcollide nunca acham colisão com um rect vazio.
+        # A câmera desenha a imagem a partir deste canto (x0, y0).
         self.rect = pygame.Rect(x0, y0, 0, 0)
