@@ -22,6 +22,8 @@ ESPERA_DEPOIS_DO_CHEFE = 2000
 # Cada fase é um dicionário. Tudo em coordenadas do MUNDO (o mapa inteiro):
 # plataformas são (x, y, largura, altura) e inimigos são (tipo, x, y dos pés).
 # "camadas" são as imagens de fundo e o quanto cada uma anda com a câmera.
+# "moveis" (opcional) são plataformas que vão e voltam na horizontal:
+# (x_inicial, y, largura, x_final, velocidade em pixels por quadro).
 # "tom" (opcional) é uma cor que multiplica as camadas: (255, 255, 255) não muda nada,
 # cores mais escuras escurecem o fundo (a fase 3 usa isso para virar noite).
 FASES = [
@@ -63,7 +65,7 @@ FASES = [
             (0, 550, 960, 50),
             (1240, 550, 630, 50),   # buraco de 960 a 1240: passe pelas plataformas
             (1990, 550, 690, 50),   # buraco de 1870 a 1990
-            (2890, 550, 710, 50),   # buraco de 2680 a 2890: desça da plataforma alta
+            (2890, 550, 710, 50),   # buraco de 2680 a 2890: use a plataforma móvel
             (300, 460, 128, 32),
             (500, 390, 128, 32),
             (750, 450, 200, 32),
@@ -87,6 +89,9 @@ FASES = [
             ("atirador", 3050, 450),
             ("soldado", 3300, 550),
             ("bazuca", 3450, 550),
+        ],
+        "moveis": [
+            (2690, 500, 96, 2790, 2),   # leva o jogador por cima do buraco de 2680 a 2890
         ],
     },
     {
@@ -134,6 +139,29 @@ class Plataforma(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(x, y))
 
 
+class PlataformaMovel(Plataforma):
+    """Plataforma que vai e volta na horizontal entre x_inicial e x_final.
+
+    Herda da Plataforma (então o jogador e os tiros colidem com ela do mesmo
+    jeito) e só acrescenta o movimento.
+    """
+
+    def __init__(self, x_inicial, y, largura, x_final, velocidade, tileset):
+        """Cria a plataforma em x_inicial; ela anda até x_final e volta."""
+        super().__init__(x_inicial, y, largura, 32, tileset)
+        self.x_inicial = x_inicial
+        self.x_final = x_final
+        self.velocidade = velocidade
+        self.deslocamento = 0       # quanto andou no último quadro (para carregar o jogador)
+
+    def update(self):
+        """Anda um passo e inverte o sentido quando chega numa das pontas."""
+        self.rect.x += self.velocidade
+        self.deslocamento = self.velocidade
+        if self.rect.x >= self.x_final or self.rect.x <= self.x_inicial:
+            self.velocidade = -self.velocidade
+
+
 class Fase:
     """Monta o cenário de uma fase a partir da lista FASES e cuida dos inimigos."""
 
@@ -152,6 +180,11 @@ class Fase:
         self.plataformas = pygame.sprite.Group()
         for x, y, largura, altura in dados["plataformas"]:
             self.plataformas.add(Plataforma(x, y, largura, altura, tileset))
+        self.moveis = pygame.sprite.Group()     # as móveis ficam nos dois grupos
+        for x, y, largura, x_final, velocidade in dados.get("moveis", []):
+            plataforma = PlataformaMovel(x, y, largura, x_final, velocidade, tileset)
+            self.plataformas.add(plataforma)
+            self.moveis.add(plataforma)
 
         self.ponto_seguro = None    # último lugar com chão firme onde o jogador pisou
         self.inicio_arena = dados.get("inicio_arena")   # None nas fases sem chefe
@@ -175,11 +208,22 @@ class Fase:
         if jogador.rect.right > self.limite_do_jogador():
             jogador.rect.right = self.limite_do_jogador()
         self.prender_na_arena(jogador)
+        self.mover_plataformas(jogador)
         self.verificar_queda(jogador)
         self.inimigos.update(jogador, self.plataformas)
         self.tiros_inimigos.update()
         tiros_inimigos_x_plataformas(self.tiros_inimigos, self.plataformas)
         self.efeitos.update()
+
+    def mover_plataformas(self, jogador):
+        """Move as plataformas móveis e leva junto o jogador que está em cima de uma."""
+        for plataforma in self.moveis:
+            em_cima = (jogador.no_chao and jogador.rect.bottom == plataforma.rect.top
+                       and plataforma.rect.left < jogador.rect.right
+                       and plataforma.rect.right > jogador.rect.left)
+            plataforma.update()
+            if em_cima:
+                jogador.rect.x += plataforma.deslocamento
 
     def verificar_queda(self, jogador):
         """Buracos: se o jogador cair, perde 1 vida e volta para o último chão firme.
@@ -191,7 +235,8 @@ class Fase:
             x, y = jogador.rect.midbottom
             for plataforma in self.plataformas:
                 longe_da_beirada = plataforma.rect.left + 40 < x < plataforma.rect.right - 40
-                if plataforma.rect.top == y and longe_da_beirada:
+                # plataforma móvel não serve: ela sai do lugar e o jogador voltaria no ar
+                if plataforma.rect.top == y and longe_da_beirada and plataforma not in self.moveis:
                     self.ponto_seguro = (x, y)
         elif jogador.rect.top > config.ALTURA and jogador.esta_vivo():
             jogador.levar_dano()
