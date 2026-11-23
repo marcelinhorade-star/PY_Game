@@ -1,8 +1,32 @@
+"""Tiros do jogador (Pessoa A).
+
+Define a classe Tiro (bala que anda na horizontal ou para cima e some
+depois de percorrer o alcance), a classe Clarao (brilho rápido na ponta da
+arma) e as 3 armas do jogo (dicionário ARMAS e função criar_tiros). As imagens vêm do pacote "Generic RUN n' GUN" (CC0) e são
+carregadas uma vez só.
+"""
 import os
 import pygame
 
-# Distância máxima (em pixels) que o tiro anda antes de sumir.
+# Distância máxima (em pixels) que o tiro anda antes de sumir (valor padrão).
 ALCANCE = 800
+
+# As 3 armas. Cada personagem (personagens.py) usa uma delas.
+#   intervalo:  tempo mínimo (ms) entre dois tiros
+#   balas:      quantas balas saem de uma vez
+#   abertura:   quanto as balas se abrem em leque (0 = todas retas)
+#   velocidade: pixels por quadro
+#   alcance:    distância até a bala sumir
+#   dano:       vida que cada bala tira do inimigo
+#   tamanho:    multiplica o tamanho da imagem da bala
+ARMAS = {
+    "pistola": {"nome": "Pistola", "intervalo": 250, "balas": 1, "abertura": 0,
+                "velocidade": 12, "alcance": 800, "dano": 1, "tamanho": 1},
+    "escopeta": {"nome": "Escopeta", "intervalo": 550, "balas": 3, "abertura": 2,
+                 "velocidade": 13, "alcance": 330, "dano": 1, "tamanho": 1},
+    "canhao": {"nome": "Canhão", "intervalo": 750, "balas": 1, "abertura": 0,
+               "velocidade": 8, "alcance": 900, "dano": 3, "tamanho": 2},
+}
 
 # Imagem da bala (do pack "Generic RUN n' GUN", CC0).
 # os.path.dirname(__file__) = pasta onde está este arquivo, então o caminho
@@ -48,23 +72,43 @@ def carregar_imagem_clarao():
 class Tiro(pygame.sprite.Sprite):
     """Projétil que anda em linha reta, na horizontal ou para cima."""
 
-    def __init__(self, x, y, direcao, para_cima=False):
+    def __init__(self, x, y, direcao, para_cima=False, desvio=0,
+                 velocidade=12, alcance=ALCANCE, dano=1, tamanho=1, diagonal=False):
         """Cria o tiro em (x, y).
 
         direcao: 1 (direita) ou -1 (esquerda), usado no tiro horizontal.
         para_cima: se True, o tiro sobe em vez de andar para os lados.
+        desvio: velocidade "de lado" (para cima/baixo no tiro horizontal,
+            para os lados no tiro para cima); é o que abre o leque da escopeta.
+        velocidade, alcance, dano e tamanho vêm da arma (dicionário ARMAS).
+        diagonal: se True, o tiro vai para cima e para o lado (45 graus).
         """
         super().__init__()
-        if para_cima:
-            self.vel_x = 0
-            self.vel_y = -12
+        if diagonal:
+            # 0.7 é mais ou menos o seno de 45 graus: assim a bala anda o mesmo
+            # tanto para o lado e para cima, com a mesma rapidez do tiro reto.
+            passo = round(velocidade * 0.7)
+            self.vel_x = passo * direcao + desvio
+            self.vel_y = -passo + desvio * direcao
+        elif para_cima:
+            self.vel_x = desvio
+            self.vel_y = -velocidade
         else:
-            self.vel_x = 12 * direcao
-            self.vel_y = 0
+            self.vel_x = velocidade * direcao
+            self.vel_y = desvio
+        self.alcance = alcance
+        self.dano = dano   # colisoes.py soma o dano das balas que acertaram
 
         bala = carregar_imagem_bala()
+        if bala is not None and tamanho != 1:
+            bala = pygame.transform.scale_by(bala, tamanho)   # bala do canhão é maior
         if bala is not None:
-            if para_cima:
+            if diagonal:
+                # 45 graus deixa a bala apontando para cima e para a direita
+                self.image = pygame.transform.rotate(bala, 45)
+                if direcao == -1:
+                    self.image = pygame.transform.flip(self.image, True, False)
+            elif para_cima:
                 # rotate gira no sentido anti-horário: 90 graus deixa a
                 # bala, que aponta para a direita, apontando para cima.
                 self.image = pygame.transform.rotate(bala, 90)
@@ -76,9 +120,9 @@ class Tiro(pygame.sprite.Sprite):
         else:
             # Plano B: sem a imagem, usa o retângulo amarelo de antes.
             if para_cima:
-                self.image = pygame.Surface((4, 10))   # tiro em pé
+                self.image = pygame.Surface((4 * tamanho, 10 * tamanho))   # tiro em pé
             else:
-                self.image = pygame.Surface((10, 4))   # tiro deitado
+                self.image = pygame.Surface((10 * tamanho, 4 * tamanho))   # tiro deitado
             self.image.fill((255, 220, 0))  # amarelo
 
         self.rect = self.image.get_rect(center=(x, y))
@@ -93,15 +137,32 @@ class Tiro(pygame.sprite.Sprite):
         self.rect.x += self.vel_x
         self.rect.y += self.vel_y
         self.distancia += abs(self.vel_x) + abs(self.vel_y)
-        if self.distancia > ALCANCE:
+        if self.distancia > self.alcance:
             self.kill()
+
+
+def criar_tiros(arma, x, y, direcao, para_cima, diagonal=False):
+    """Cria as balas de UM disparo da arma e devolve uma lista com elas.
+
+    arma é um dos dicionários de ARMAS. Com 3 balas e abertura 2, os desvios
+    são -2, 0 e 2: uma bala sobe um pouco, uma vai reta e uma desce (leque).
+    """
+    tiros = []
+    meio = (arma["balas"] - 1) / 2
+    for i in range(arma["balas"]):
+        desvio = (i - meio) * arma["abertura"]
+        tiros.append(Tiro(x, y, direcao, para_cima, desvio,
+                          arma["velocidade"], arma["alcance"], arma["dano"], arma["tamanho"],
+                          diagonal))
+    return tiros
 
 
 class Clarao(pygame.sprite.Sprite):
     """Clarão rápido na ponta da arma, que some depois de DURACAO_CLARAO ms.
 
     Fica no mesmo grupo dos tiros (para ser desenhado junto), mas não é um
-    tiro: o rect dele tem tamanho 0, então nunca colide com nada.
+    tiro: a máscara dele é vazia (nenhum pixel "sólido"), então o
+    collide_mask nunca acha colisão com ele, e o dano dele é 0.
     """
 
     def __init__(self, jogador):
@@ -111,6 +172,10 @@ class Clarao(pygame.sprite.Sprite):
         self.criado_em = pygame.time.get_ticks()
         self.image = pygame.Surface((1, 1), pygame.SRCALPHA)  # trocada no update
         self.rect = pygame.Rect(0, 0, 0, 0)
+        self.dano = 0
+        # Máscara de 1x1 sem nenhum pixel marcado: o collide_mask usa esta
+        # máscara (em vez de criar uma a partir da imagem) e nunca colide.
+        self.mask = pygame.mask.Mask((1, 1))
         self.update()
 
     def update(self):
@@ -128,7 +193,13 @@ class Clarao(pygame.sprite.Sprite):
 
         # Gira/vira a imagem e acha o canto de cima à esquerda (x0, y0)
         # para que a base do clarão fique encostada na ponta da arma.
-        if para_cima:
+        if self.jogador.mirando_diagonal:
+            self.image = pygame.transform.rotate(clarao, 45)
+            if direcao == -1:
+                self.image = pygame.transform.flip(self.image, True, False)
+            x0 = x - self.image.get_width() // 2
+            y0 = y - self.image.get_height() // 2
+        elif para_cima:
             self.image = pygame.transform.rotate(clarao, 90)
             x0 = x - self.image.get_width() // 2
             y0 = y - self.image.get_height()
@@ -141,6 +212,5 @@ class Clarao(pygame.sprite.Sprite):
             x0 = x
             y0 = y - self.image.get_height() // 2
 
-        # Tamanho 0: a câmera desenha a imagem a partir deste canto, mas
-        # colliderect/groupcollide nunca acham colisão com um rect vazio.
+        # A câmera desenha a imagem a partir deste canto (x0, y0).
         self.rect = pygame.Rect(x0, y0, 0, 0)

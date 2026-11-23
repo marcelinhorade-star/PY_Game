@@ -23,6 +23,7 @@ def tiros_do_jogador_x_inimigos(tiros_jogador, inimigos):
 
     groupcollide devolve {inimigo: [tiros que acertaram]}. O False mantém o
     inimigo no grupo (ele só some quando a vida acaba) e o True apaga os tiros.
+    O dano é a soma do dano de cada tiro (o canhão tira 3, as outras armas 1).
     collide_mask compara os pixels desenhados, e não o retângulo inteiro, então
     tiro que passa na parte transparente da imagem não conta.
     """
@@ -30,7 +31,8 @@ def tiros_do_jogador_x_inimigos(tiros_jogador, inimigos):
     acertos = pygame.sprite.groupcollide(inimigos, tiros_jogador, False, True,
                                          pygame.sprite.collide_mask)
     for inimigo, tiros in acertos.items():
-        if inimigo.levar_dano(len(tiros)):
+        dano = sum(tiro.dano for tiro in tiros)
+        if inimigo.levar_dano(dano):
             pontos += inimigo.PONTOS
     return pontos
 

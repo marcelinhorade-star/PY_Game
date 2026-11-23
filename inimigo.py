@@ -72,14 +72,14 @@ class Inimigo(pygame.sprite.Sprite):
     """Soldado que patrulha, persegue o jogador quando ele chega perto e atira."""
 
     NOME = "soldado"            # chave das animações em assets
-    VIDA = 3
-    VELOCIDADE = 1
+    VIDA = 4                    # era 3
+    VELOCIDADE = 2              # era 1
     PONTOS = 100
-    DISTANCIA_VISAO = 350       # a partir daqui ele vê o jogador
+    DISTANCIA_VISAO = 400       # a partir daqui ele vê o jogador (era 350)
     DISTANCIA_MINIMA = 180      # para de chegar perto e só atira
     RAIO_PATRULHA = 100
-    INTERVALO_TIRO = 1500       # ms entre um tiro e outro
-    VELOCIDADE_TIRO = 6
+    INTERVALO_TIRO = 1100       # ms entre um tiro e outro (era 1500)
+    VELOCIDADE_TIRO = 7         # era 6
     ALTURA_ARMA = 42            # altura do cano da arma, medida a partir dos pés
 
     def __init__(self, x, y, assets, grupos):
@@ -204,12 +204,12 @@ class Atirador(Inimigo):
     """
 
     NOME = "atirador"
-    VIDA = 2
+    VIDA = 3                    # era 2
     VELOCIDADE = 0
     PONTOS = 150
-    DISTANCIA_VISAO = 550
-    INTERVALO_TIRO = 2200
-    VELOCIDADE_TIRO = 10
+    DISTANCIA_VISAO = 600       # era 550
+    INTERVALO_TIRO = 1700       # era 2200
+    VELOCIDADE_TIRO = 12        # era 10
     ALTURA_ARMA = 36
 
 
@@ -220,12 +220,12 @@ class Bazuca(Inimigo):
     """
 
     NOME = "bazuca"
-    VIDA = 4
+    VIDA = 6                    # era 4
     VELOCIDADE = 0
     PONTOS = 200
-    DISTANCIA_VISAO = 450
-    INTERVALO_TIRO = 2600
-    VELOCIDADE_TIRO = 4
+    DISTANCIA_VISAO = 500       # era 450
+    INTERVALO_TIRO = 2000       # era 2600
+    VELOCIDADE_TIRO = 5         # era 4
     ALTURA_ARMA = 48
 
     def criar_tiro(self):

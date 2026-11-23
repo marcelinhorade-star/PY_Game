@@ -58,6 +58,16 @@ class Som:
         pygame.mixer.music.play(-1)   # -1 = repetir sem parar
         self.musica_atual = nome
 
+    def pausar_musica(self):
+        """Pausa a música de fundo (ela continua do mesmo ponto em continuar_musica)."""
+        if self.ativo:
+            pygame.mixer.music.pause()
+
+    def continuar_musica(self):
+        """Volta a tocar a música pausada."""
+        if self.ativo:
+            pygame.mixer.music.unpause()
+
     def parar_musica(self):
         """Para a música de fundo."""
         if self.ativo:
