@@ -120,4 +120,10 @@ Usamos IA generativa no projeto, como permite a política da disciplina:
   plataforma móvel e parede invisível em `fase.py`, tiro na diagonal), testando
   cada mudança com simulações do jogo. Tudo foi revisado e testado pelo grupo.
   Conversas: [projeto no Claude](https://claude.ai/code/project/chan_014E4dHx1o6LGTzQDRm4Mp3G).
-- USO DE IA PELO GABRIEL: DESCREVA AQUI, COM O LINK (ou escreva que não usou).
+- **Claude (Anthropic)**: usado pelo Gabriel para escrever, passo a passo e com
+  explicações, `fase.py`, `colisoes.py`, `camera.py`, `inimigo.py`, `efeitos.py` e
+  `cenario.py` (cerca de 100% gerados por IA, seguindo o padrão do handout de PyGame),
+  para baixar o pacote de sprites e recortar os quadros dos inimigos e do cenário, e
+  para testar cada etapa com simulações automáticas do jogo. O Gabriel testou e
+  validou cada arquivo e fez os commits. Conversa completa no anexo:
+  [anexos/chat_pessoa_B.md](anexos/chat_pessoa_B.md).
