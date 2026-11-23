@@ -2,13 +2,15 @@
 
 Define a classe Jogador, que anda, pula, agacha, mira para cima, atira,
 leva dano (com invencibilidade e piscar) e troca de animação conforme o
-estado. Também tem as funções que carregam os frames do pacote de sprites
+estado. A vida, a velocidade, a arma e a cor da roupa vêm do personagem
+escolhido (personagens.py). Também tem as funções que carregam os frames do pacote de sprites
 "Generic RUN n' GUN" (CC0), com retângulos provisórios caso as imagens
 não existam.
 """
 import os
 import pygame
-from tiro import Tiro, Clarao
+from tiro import Clarao, ARMAS, criar_tiros
+from personagens import PERSONAGENS
 
 # Pasta com os frames do jogador, sempre ao lado deste arquivo
 # (funciona não importa de qual pasta o jogo for rodado).
@@ -44,22 +46,46 @@ def criar_frames_provisorios(cor, quantidade, altura=60):
     return frames
 
 
-def carregar_frames(nome, quantidade):
-    """Carrega os arquivos nome_0.png ... nome_N.png e aumenta cada um pela ESCALA."""
+def trocar_cor(imagem, troca_cor):
+    """Devolve uma cópia da imagem com a roupa azul pintada de outra cor.
+
+    Passa por todos os pixels. Os "azulados" (azul bem maior que vermelho e
+    verde) têm os canais trocados de lugar: com troca_cor = (2, 0, 0) o pixel
+    (R, G, B) vira (B, R, R), ou seja, o azul vira vermelho. A pele, o cabelo
+    e a arma não são azulados, então continuam iguais.
+    """
+    nova = imagem.copy()
+    for x in range(nova.get_width()):
+        for y in range(nova.get_height()):
+            r, g, b, a = nova.get_at((x, y))
+            if a > 0 and b > r + 20 and b > g + 10:
+                cor = (r, g, b)
+                nova.set_at((x, y), (cor[troca_cor[0]], cor[troca_cor[1]], cor[troca_cor[2]], a))
+    return nova
+
+
+def carregar_frames(nome, quantidade, troca_cor=None):
+    """Carrega os arquivos nome_0.png ... nome_N.png e aumenta cada um pela ESCALA.
+
+    Se troca_cor não for None, pinta a roupa de outra cor (ver trocar_cor).
+    """
     frames = []
     for i in range(quantidade):
         caminho = os.path.join(PASTA_IMAGENS, f"{nome}_{i}.png")
         imagem = pygame.image.load(caminho)
         if pygame.display.get_surface() is not None:
             imagem = imagem.convert_alpha()  # deixa o desenho mais rápido
+        if troca_cor is not None:
+            imagem = trocar_cor(imagem, troca_cor)  # antes de aumentar: menos pixels
         imagem = pygame.transform.scale_by(imagem, ESCALA)
         frames.append(imagem)
     return frames
 
 
-def carregar_animacoes():
+def carregar_animacoes(troca_cor=None):
     """Monta o dicionário {estado: lista de frames}.
 
+    troca_cor vem do personagem (None = cores originais).
     Se a pasta de imagens não existir, usa os retângulos provisórios.
     """
     if not os.path.isdir(PASTA_IMAGENS):
@@ -76,17 +102,26 @@ def carregar_animacoes():
         }
     animacoes = {}
     for nome, quantidade in QUANTIDADE_FRAMES.items():
-        animacoes[nome] = carregar_frames(nome, quantidade)
+        animacoes[nome] = carregar_frames(nome, quantidade, troca_cor)
     return animacoes
 
 
 class Jogador(pygame.sprite.Sprite):
     """Personagem controlado pelo jogador."""
 
-    def __init__(self, x, y):
-        """Cria o jogador na posição (x, y), que é o ponto entre os pés."""
+    def __init__(self, x, y, personagem=None):
+        """Cria o jogador na posição (x, y), que é o ponto entre os pés.
+
+        personagem é um dos dicionários de PERSONAGENS (personagens.py).
+        Sem personagem, usa o primeiro (Recruta).
+        """
         super().__init__()
-        self.animacoes = carregar_animacoes()
+        if personagem is None:
+            personagem = PERSONAGENS[0]
+        self.personagem = personagem
+        self.arma = ARMAS[personagem["arma"]]
+        self.velocidade = personagem["velocidade"]
+        self.animacoes = carregar_animacoes(personagem["troca_cor"])
         self.estado = "parado"
         self.frame_atual = 0
         self.ultimo_frame = 0
@@ -94,7 +129,7 @@ class Jogador(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(midbottom=(x, y))
         self.vel_y = 0
         self.no_chao = True
-        self.vida = 5               # era 3 (agora é preciso matar todos os inimigos)
+        self.vida = personagem["vida"]
         self.direcao = 1  # 1 = direita, -1 = esquerda
         self.ultimo_tiro = 0
         self.ultimo_dano = -10000   # momento (ms) do último dano
@@ -109,7 +144,7 @@ class Jogador(pygame.sprite.Sprite):
 
     def mover(self, teclas):
         """Anda para os lados com as setas (mais devagar agachado)."""
-        velocidade = 2 if self.agachado else 5
+        velocidade = 2 if self.agachado else self.velocidade
         if teclas[pygame.K_LEFT]:
             self.rect.x -= velocidade
             self.direcao = -1
@@ -131,14 +166,17 @@ class Jogador(pygame.sprite.Sprite):
         return self.rect.centerx + 20 * self.direcao, self.rect.top + 23, False
 
     def atirar(self, grupo_tiros):
-        """Cria um tiro e um clarão na ponta da arma, com intervalo de 250 ms."""
+        """Dispara a arma do personagem: cria as balas e um clarão na ponta da arma.
+
+        Só atira se já passou o intervalo da arma desde o último tiro
+        (250 ms na pistola, 550 ms na escopeta, 750 ms no canhão).
+        """
         if not self.esta_vivo():
             return  # morto não atira
         agora = pygame.time.get_ticks()
-        if agora - self.ultimo_tiro > 250:
+        if agora - self.ultimo_tiro > self.arma["intervalo"]:
             x, y, para_cima = self.ponta_da_arma()
-            tiro = Tiro(x, y, self.direcao, para_cima=para_cima)
-            grupo_tiros.add(tiro)
+            grupo_tiros.add(criar_tiros(self.arma, x, y, self.direcao, para_cima))
             grupo_tiros.add(Clarao(self))
             self.ultimo_tiro = agora
 

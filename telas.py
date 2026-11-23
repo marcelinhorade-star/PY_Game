@@ -1,4 +1,4 @@
-"""Telas fora da partida: início, game over e vitória.
+"""Telas fora da partida: início, escolha de personagem, game over e vitória.
 
 Aqui só se DESENHA. Quem decide qual tela mostrar e o que cada tecla faz é
 a máquina de estados do main.py.
@@ -6,6 +6,7 @@ a máquina de estados do main.py.
 import pygame
 
 import config
+from tiro import ARMAS
 
 CONTROLES = [
     "Setas: andar",
@@ -43,6 +44,40 @@ class Telas:
             self._texto(tela, "Aperte ENTER para jogar", self.fonte_media, config.BRANCO, 290)
         for i, linha in enumerate(CONTROLES):
             self._texto(tela, linha, self.fonte_pequena, config.CINZA, 400 + i * 36)
+
+    def desenhar_escolha(self, tela, personagens, retratos, escolhido):
+        """Mostra os personagens lado a lado; o escolhido fica com moldura amarela.
+
+        personagens: lista PERSONAGENS (personagens.py)
+        retratos: uma imagem de cada personagem, na mesma ordem
+        escolhido: índice do personagem marcado agora
+        """
+        tela.fill((25, 28, 40))
+        self._texto(tela, "Escolha o personagem", self.fonte_media, config.AMARELO, 60)
+        largura_caixa = 260
+        espaco = (config.LARGURA - largura_caixa * len(personagens)) // (len(personagens) + 1)
+        for i, personagem in enumerate(personagens):
+            x = espaco + i * (largura_caixa + espaco)
+            caixa = pygame.Rect(x, 110, largura_caixa, 330)
+            cor = config.AMARELO if i == escolhido else config.CINZA
+            pygame.draw.rect(tela, (40, 44, 60), caixa)
+            pygame.draw.rect(tela, cor, caixa, 4 if i == escolhido else 2)
+            # retrato aumentado mais 2 vezes, com os pés perto do meio da caixa
+            retrato = pygame.transform.scale_by(retratos[i], 2)
+            tela.blit(retrato, retrato.get_rect(midbottom=(caixa.centerx, caixa.top + 170)))
+            linhas = [
+                (personagem["nome"], self.fonte_media, cor),
+                (f"Vida: {personagem['vida']}", self.fonte_pequena, config.BRANCO),
+                (f"Arma: {ARMAS[personagem['arma']]['nome']}", self.fonte_pequena, config.BRANCO),
+                (f"Velocidade: {personagem['velocidade']}", self.fonte_pequena, config.BRANCO),
+            ]
+            y = caixa.top + 200
+            for texto, fonte, cor_texto in linhas:
+                imagem = fonte.render(texto, True, cor_texto)
+                tela.blit(imagem, imagem.get_rect(center=(caixa.centerx, y)))
+                y += 34
+        self._texto(tela, personagens[escolhido]["descricao"], self.fonte_pequena, config.BRANCO, 480)
+        self._texto(tela, "Setas: trocar      ENTER: jogar", self.fonte_pequena, config.CINZA, 540)
 
     def desenhar_game_over(self, tela, pontos):
         """Tela de derrota com a pontuação."""

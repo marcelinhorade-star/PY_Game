@@ -5,13 +5,15 @@ A classe Jogo guarda o estado atual do jogo e repete, 60 vezes por segundo:
     2. atualizar()       -> move tudo e resolve colisões (só no estado "jogando")
     3. desenhar()        -> pinta a tela do estado atual
 
-Estados:  "inicio" -> "jogando" -> "game_over" ou "vitoria" -> "inicio" ...
+Estados:  "inicio" -> "escolha" -> "jogando" -> "game_over" ou "vitoria" -> "inicio" ...
+Na tela "escolha" o jogador escolhe um dos 3 personagens (personagens.py).
 São 3 fases (lista FASES do fase.py); a vitória vem depois de matar o chefe da fase 3.
 """
 import pygame
 
 import config
-from jogador import Jogador
+from jogador import Jogador, carregar_animacoes
+from personagens import PERSONAGENS
 from fase import Fase, existe_fase
 from camera import Camera
 from colisoes import altura_do_chao, tiros_do_jogador_x_inimigos, inimigos_x_jogador
@@ -37,6 +39,9 @@ class Jogo:
         self.som = Som()
         self.pontos = 0
         self.rodando = True
+        self.escolhido = 0   # índice do personagem marcado na tela de escolha
+        # uma imagem parada de cada personagem, para mostrar na tela de escolha
+        self.retratos = [carregar_animacoes(p["troca_cor"])["parado"][0] for p in PERSONAGENS]
         self.mudar_estado("inicio")
 
     def mudar_estado(self, novo):
@@ -52,9 +57,9 @@ class Jogo:
 
     # ------------------------------------------------------------ partida
     def nova_partida(self):
-        """Zera pontos, cria o jogador e carrega a primeira fase."""
+        """Zera pontos, cria o jogador com o personagem escolhido e carrega a primeira fase."""
         self.pontos = 0
-        self.jogador = Jogador(*POSICAO_INICIAL)
+        self.jogador = Jogador(*POSICAO_INICIAL, PERSONAGENS[self.escolhido])
         self.hud = HUD(self.jogador.vida)   # tantos corações quanto a vida inicial
         self.tiros_jogador = pygame.sprite.Group()
         self.morreu_em = None        # momento (ms) em que a vida chegou a 0
@@ -90,18 +95,29 @@ class Jogo:
                 self.rodando = False
             elif evento.type == pygame.KEYDOWN:
                 if self.estado == "inicio" and evento.key == pygame.K_RETURN:
-                    self.nova_partida()
+                    self.mudar_estado("escolha")
+                elif self.estado == "escolha":
+                    self.tratar_escolha(evento.key)
                 elif self.estado == "jogando" and evento.key == pygame.K_SPACE:
                     self.jogador.pular()
                 elif self.estado in ("game_over", "vitoria") and evento.key == pygame.K_RETURN:
                     self.mudar_estado("inicio")   # jogar de novo
+
+    def tratar_escolha(self, tecla):
+        """Tela de escolha: setas trocam o personagem marcado, ENTER começa a partida."""
+        if tecla == pygame.K_LEFT:
+            self.escolhido = (self.escolhido - 1) % len(PERSONAGENS)   # % dá a volta
+        elif tecla == pygame.K_RIGHT:
+            self.escolhido = (self.escolhido + 1) % len(PERSONAGENS)
+        elif tecla == pygame.K_RETURN:
+            self.nova_partida()
 
     def atualizar(self):
         """Um quadro de jogo: move, testa colisões e decide se a fase/partida acabou."""
         teclas = pygame.key.get_pressed()
         if teclas[pygame.K_z]:
             antes = len(self.tiros_jogador)
-            self.jogador.atirar(self.tiros_jogador)   # o intervalo de 250 ms fica no Jogador
+            self.jogador.atirar(self.tiros_jogador)   # o intervalo entre tiros (de cada arma) fica no Jogador
             if len(self.tiros_jogador) > antes:       # atirar() não diz se atirou: contamos os tiros
                 self.som.tocar("tiro")
 
@@ -146,6 +162,8 @@ class Jogo:
             self.hud.desenhar(self.tela, self.jogador.vida, self.pontos, self.numero_fase)  # por último: fica por cima
         elif self.estado == "inicio":
             self.telas.desenhar_inicio(self.tela)
+        elif self.estado == "escolha":
+            self.telas.desenhar_escolha(self.tela, PERSONAGENS, self.retratos, self.escolhido)
         elif self.estado == "game_over":
             self.telas.desenhar_game_over(self.tela, self.pontos)
         elif self.estado == "vitoria":
