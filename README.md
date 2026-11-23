@@ -12,7 +12,7 @@ foguetes e chegue ao fim do mapa sem perder todas as vidas.
 |---|---|
 | Marcelo (`marcelinhorade-star`) | Jogador e tiro: `jogador.py`, `tiro.py` |
 | Gabriel Gonçalves (`Gabriel2763`) | Inimigos, colisões, câmera, cenário e fases: `inimigo.py`, `colisoes.py`, `camera.py`, `cenario.py`, `efeitos.py`, `fase.py` |
-| SEU NOME (seu usuário do GitHub) | Loop principal, telas, HUD, som e README: `main.py`, `config.py`, `telas.py`, `hud.py`, `som.py` |
+| Victor Kim (seu usuário do GitHub) | Loop principal, telas, HUD, som e README: `main.py`, `config.py`, `telas.py`, `hud.py`, `som.py` |
 
 ## Vídeo
 
