@@ -7,13 +7,32 @@ Atravesse as fases atirando nos soldados inimigos, desvie dos tiros e dos
 foguetes e passe pelas 3 fases sem perder todas as vidas. No fim da fase 3
 você enfrenta o chefe, o Comandante: só dá para vencer o jogo derrotando ele.
 
+## Como jogar
+
+- **Escolha um personagem** antes de começar. Cada um tem vida, velocidade e arma diferentes:
+
+  | Personagem | Vida | Velocidade | Arma |
+  |---|---|---|---|
+  | Recruta | 5 | média | Pistola: tiro rápido e de longo alcance |
+  | Brutus | 7 | lenta | Canhão: tiro lento que tira 3 de vida |
+  | Vespa | 3 | rápida | Escopeta: 3 balas em leque, alcance curto |
+
+- **Mate todos os inimigos para avançar.** Uma parede invisível não deixa você
+  passar muito à frente do último inimigo vivo, inclusive os que estão em cima
+  das plataformas (use o tiro na diagonal para acertá-los do chão).
+- **Cuidado com os buracos no chão.** Quem cai perde 1 vida e volta para o último
+  chão firme. Alguns buracos só dá para atravessar pulando pelas plataformas, e
+  na fase 2 há uma plataforma que se mexe e leva você para o outro lado.
+- **Placar:** no fim da partida você digita seu nome e a pontuação é salva no
+  placar das maiores pontuações (arquivo `placar.json`).
+
 ## Integrantes
 
 | Integrante | Parte do projeto |
 |---|---|
-| Marcelo (`marcelinhorade-star`) | Jogador, tiro e chefe: `jogador.py`, `tiro.py`, `chefe.py` |
+| Marcelo (`marcelinhorade-star`) | Jogador, personagens, tiro e chefe: `jogador.py`, `personagens.py`, `tiro.py`, `chefe.py` |
 | Gabriel Gonçalves (`Gabriel2763`) | Inimigos, colisões, câmera, cenário e fases: `inimigo.py`, `colisoes.py`, `camera.py`, `cenario.py`, `efeitos.py`, `fase.py` |
-| SEU NOME (seu usuário do GitHub) | Loop principal, telas, HUD, som e README: `main.py`, `config.py`, `telas.py`, `hud.py`, `som.py` |
+| Victor Kim (`victortykim`)| Loop principal, telas, HUD, som e README: `main.py`, `config.py`, `telas.py`, `hud.py`, `som.py` |
 
 ## Vídeo
 
@@ -38,32 +57,40 @@ LINK DO VÍDEO AQUI
 
 | Tecla | Ação |
 |---|---|
-| Setas esquerda / direita | andar |
+| Setas esquerda / direita | andar (na tela de escolha: trocar de personagem) |
 | Seta para cima | mirar para cima |
+| Seta para cima + esquerda ou direita | mirar na diagonal |
 | Seta para baixo | agachar |
 | Espaço | pular |
 | Z | atirar (segure para atirar sem parar) |
-| ENTER | começar / jogar de novo |
+| ENTER | começar / escolher o personagem / confirmar o nome / jogar de novo |
+| Letras e BACKSPACE | digitar e apagar o nome no fim da partida |
 
 ## Como o código está organizado
 
 O jogo é orientado a objetos e cada arquivo cuida de uma parte:
 
 - `main.py`: classe `Jogo`, com o loop principal e a máquina de estados
-  (`inicio` → `jogando` → `game_over` ou `vitoria` → `inicio`).
+  (`inicio` → `escolha` → `jogando` → `nome` → `game_over` ou `vitoria` → `inicio`).
 - `config.py`: constantes compartilhadas (tamanho da tela, FPS, cores, pastas).
-- `telas.py`: tela de início, game over e vitória.
+- `telas.py`: telas de início, escolha de personagem, nome, game over e vitória.
+- `placar.py`: salva e lê o placar das maiores pontuações (`placar.json`).
 - `hud.py`: vida, fase e pontuação durante o jogo.
 - `som.py`: música de fundo e efeitos sonoros.
-- `jogador.py` / `tiro.py`: o personagem, suas animações e os tiros.
+- `jogador.py` / `tiro.py`: o personagem, suas animações, as 3 armas e os tiros.
+- `personagens.py`: os 3 personagens que dá para escolher (vida, velocidade, arma e cor).
 - `fase.py`, `cenario.py`, `camera.py`, `inimigo.py`, `efeitos.py`, `colisoes.py`:
-  mapas das fases, fundo com paralaxe, câmera, inimigos, explosões e colisões.
+  mapas das fases (com buracos e plataforma móvel), fundo com paralaxe, câmera,
+  inimigos, explosões e colisões.
 - `chefe.py`: o chefe da fase 3 (soldado gigante com barra de vida e 2 ataques).
 
 ## Créditos
 
-**Imagens:** pacote "Generic RUN n' GUN", de Vaca Roxa, licença CC0.
-<!-- Marcelo/Gabriel: confirmem o link do pacote e se as imagens do jogador vêm dele também. -->
+**Imagens:** todas as imagens do jogo (jogador, inimigos, chefe, tiros, explosões,
+cenários e plataformas) vêm do pacote
+[Generic RUN n' GUN](https://bakudas.itch.io/generic-run-n-gun), de Vaca Roxa
+(arte de @Anokolisa e @al_MSantos), licença CC0. A bala e o clarão do tiro foram
+recortados das folhas de sprites do próprio pacote.
 
 **Sons e músicas:** Juhani Junkala (SubspaceAudio), licença CC0, baixados do OpenGameArt:
 
@@ -84,4 +111,11 @@ Usamos IA generativa no projeto, como permite a política da disciplina:
   e `som.py`, para escolher e converter os sons e para escrever este README.
   Tudo foi revisado e testado pelo grupo. Estimativa: XX% desses arquivos foi
   gerado por IA. Chat: LINK DO CHAT EXPORTADO.
-- OUTROS USOS DE IA PELO GRUPO (Marcelo, Gabriel): DESCREVAM AQUI, COM OS LINKS.
+- **Claude (Anthropic)**: usado pelo Marcelo para escrever, passo a passo e com
+  explicações, `jogador.py`, `tiro.py`, `personagens.py` e `chefe.py`, e para
+  recortar as imagens do jogador e do tiro do pacote de sprites. Também foi usado
+  para balancear o jogo (números dos inimigos em `inimigo.py`, buracos no chão,
+  plataforma móvel e parede invisível em `fase.py`, tiro na diagonal), testando
+  cada mudança com simulações do jogo. Tudo foi revisado e testado pelo grupo.
+  Estimativa: XX% desses arquivos foi gerado por IA. Chat: LINK DO CHAT EXPORTADO.
+- USO DE IA PELO GABRIEL: DESCREVA AQUI, COM O LINK (ou escreva que não usou).
