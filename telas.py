@@ -11,7 +11,7 @@ from tiro import ARMAS
 CONTROLES = [
     "Setas: andar",
     "Seta para cima: mirar para cima      Seta para baixo: agachar",
-    "Espaço: pular      Z: atirar",
+    "Espaço: pular      Z: atirar      P ou ESC: pausar",
 ]
 
 # como a partida acabou -> (título, cor do título, cor do fundo)
@@ -91,6 +91,16 @@ class Telas:
                 y += 34
         self._texto(tela, personagens[escolhido]["descricao"], self.fonte_pequena, config.BRANCO, 480)
         self._texto(tela, "Setas: trocar      ENTER: jogar", self.fonte_pequena, config.CINZA, 540)
+
+    def desenhar_pausa(self, tela):
+        """Pausa: escurece o jogo (que já foi desenhado embaixo) e escreve PAUSADO por cima."""
+        # Surface com SRCALPHA aceita transparência: preto com alpha 150 de 255
+        escuro = pygame.Surface((config.LARGURA, config.ALTURA), pygame.SRCALPHA)
+        escuro.fill((0, 0, 0, 150))
+        tela.blit(escuro, (0, 0))
+        self._texto(tela, "PAUSADO", self.fonte_titulo, config.AMARELO, 230)
+        self._texto(tela, "P ou ESC: continuar", self.fonte_media, config.BRANCO, 320)
+        self._texto(tela, "Q: sair para o menu", self.fonte_pequena, config.CINZA, 380)
 
     def desenhar_nome(self, tela, resultado, pontos, nome):
         """Fim da partida: mostra a pontuação e uma caixa com o nome sendo digitado.

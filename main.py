@@ -6,6 +6,7 @@ A classe Jogo guarda o estado atual do jogo e repete, 60 vezes por segundo:
     3. desenhar()        -> pinta a tela do estado atual
 
 Estados:  "inicio" -> "escolha" -> "jogando" -> "nome" -> "game_over" ou "vitoria" -> "inicio" ...
+Durante o jogo, P ou ESC vai para "pausa" (o jogo fica congelado) e volta para "jogando".
 Na tela "escolha" o jogador escolhe um dos 3 personagens (personagens.py).
 Na tela "nome" o jogador digita o nome, e a pontuação vai para o placar (placar.py).
 São 3 fases (lista FASES do fase.py); a vitória vem depois de matar o chefe da fase 3.
@@ -57,6 +58,8 @@ class Jogo:
             self.som.tocar_musica("menu")
         elif novo == "jogando":
             self.som.tocar_musica("fase")
+        elif novo == "pausa":
+            self.som.pausar_musica()
         elif novo == "nome":
             self.som.parar_musica()
             self.som.tocar(self.resultado)   # os efeitos se chamam "game_over" e "vitoria"
@@ -105,6 +108,10 @@ class Jogo:
                     self.mudar_estado("escolha")
                 elif self.estado == "escolha":
                     self.tratar_escolha(evento.key)
+                elif self.estado == "jogando" and evento.key in (pygame.K_p, pygame.K_ESCAPE):
+                    self.mudar_estado("pausa")
+                elif self.estado == "pausa":
+                    self.tratar_pausa(evento.key)
                 elif self.estado == "jogando" and evento.key == pygame.K_SPACE:
                     self.jogador.pular()
                 elif self.estado == "nome":
@@ -123,6 +130,19 @@ class Jogo:
             self.escolhido = (self.escolhido + 1) % len(PERSONAGENS)
         elif tecla == pygame.K_RETURN:
             self.nova_partida()
+
+    def tratar_pausa(self, tecla):
+        """Pausa: P ou ESC volta para o jogo, Q desiste da partida e volta ao menu.
+
+        Na pausa o atualizar() não é chamado (só roda no estado "jogando"), então
+        nada se mexe. Não usamos mudar_estado("jogando") para voltar porque ele
+        não precisa trocar a música: só tira a pausa dela.
+        """
+        if tecla in (pygame.K_p, pygame.K_ESCAPE):
+            self.estado = "jogando"
+            self.som.continuar_musica()
+        elif tecla == pygame.K_q:
+            self.mudar_estado("inicio")
 
     def tratar_nome(self, tecla):
         """Tela de nome: BACKSPACE apaga a última letra, ENTER salva no placar.
@@ -185,11 +205,13 @@ class Jogo:
     # ------------------------------------------------------------ desenho
     def desenhar(self):
         """Desenha a tela do estado atual."""
-        if self.estado == "jogando":
+        if self.estado in ("jogando", "pausa"):
             self.fase.desenhar(self.tela, self.camera)
             self.camera.desenhar_grupo(self.tela, self.tiros_jogador)
             self.tela.blit(self.jogador.image, self.camera.aplicar(self.jogador.rect))
             self.hud.desenhar(self.tela, self.jogador.vida, self.pontos, self.numero_fase)  # por último: fica por cima
+            if self.estado == "pausa":
+                self.telas.desenhar_pausa(self.tela)   # tela escura com PAUSADO por cima do jogo
         elif self.estado == "inicio":
             self.telas.desenhar_inicio(self.tela, self.placar)
         elif self.estado == "escolha":

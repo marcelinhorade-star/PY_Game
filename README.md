@@ -63,6 +63,8 @@ LINK DO VÍDEO AQUI
 | Seta para baixo | agachar |
 | Espaço | pular |
 | Z | atirar (segure para atirar sem parar) |
+| P ou ESC | pausar / continuar |
+| Q (com o jogo pausado) | desistir da partida e voltar ao menu |
 | ENTER | começar / escolher o personagem / confirmar o nome / jogar de novo |
 | Letras e BACKSPACE | digitar e apagar o nome no fim da partida |
 
@@ -71,9 +73,10 @@ LINK DO VÍDEO AQUI
 O jogo é orientado a objetos e cada arquivo cuida de uma parte:
 
 - `main.py`: classe `Jogo`, com o loop principal e a máquina de estados
-  (`inicio` → `escolha` → `jogando` → `nome` → `game_over` ou `vitoria` → `inicio`).
+  (`inicio` → `escolha` → `jogando` → `nome` → `game_over` ou `vitoria` → `inicio`,
+  e `jogando` ↔ `pausa` com P ou ESC).
 - `config.py`: constantes compartilhadas (tamanho da tela, FPS, cores, pastas).
-- `telas.py`: telas de início, escolha de personagem, nome, game over e vitória.
+- `telas.py`: telas de início, escolha de personagem, pausa, nome, game over e vitória.
 - `placar.py`: salva e lê o placar das maiores pontuações (`placar.json`).
 - `hud.py`: vida, fase e pontuação durante o jogo.
 - `som.py`: música de fundo e efeitos sonoros.
