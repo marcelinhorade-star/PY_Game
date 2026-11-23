@@ -12,7 +12,7 @@ foguetes e chegue ao fim do mapa sem perder todas as vidas.
 |---|---|
 | Marcelo (`marcelinhorade-star`) | Jogador e tiro: `jogador.py`, `tiro.py` |
 | Gabriel Gonçalves (`Gabriel2763`) | Inimigos, colisões, câmera, cenário e fases: `inimigo.py`, `colisoes.py`, `camera.py`, `cenario.py`, `efeitos.py`, `fase.py` |
-| Victor Kim (seu usuário do GitHub) | Loop principal, telas, HUD, som e README: `main.py`, `config.py`, `telas.py`, `hud.py`, `som.py` |
+| Victor Kim ("victortykim) | Loop principal, telas, HUD, som e README: `main.py`, `config.py`, `telas.py`, `hud.py`, `som.py` |
 
 ## Vídeo
 
@@ -73,13 +73,4 @@ O jogo é orientado a objetos e cada arquivo cuida de uma parte:
   `musica_menu.wav` (Title Screen) e `musica_fase.wav` (Level 1). As músicas foram
   convertidas para mono e 22 kHz para deixar o repositório menor.
 
-## Uso de Inteligência Artificial
 
-Usamos IA generativa no projeto, como permite a política da disciplina:
-
-- **Claude (Anthropic)**: usado por victor para escrever, passo a passo e com
-  explicações, a primeira versão de `config.py`, `main.py`, `telas.py`, `hud.py`
-  e `som.py`, para escolher e converter os sons e para escrever este README.
-  Tudo foi revisado e testado pelo grupo. Estimativa: 90% desses arquivos foi
-  gerado por IA. Chat: https://claude.ai/share/5c09a0a7-1d5d-4425-89dc-f31f8f3e1eba
-- OUTROS USOS DE IA PELO GRUPO (Marcelo, Gabriel): DESCREVAM AQUI, COM OS LINKS.
